@@ -8,7 +8,7 @@ Controller for the Personal Air Filter (PAF) system being developed at TUM EDA/R
 
 ### Prereqs
 
-From (here)[https://docs.espressif.com/projects/esp-idf/en/latest/esp32/get-started/index.html#get-started-get-prerequisites]:
+From [here](https://docs.espressif.com/projects/esp-idf/en/latest/esp32/get-started/index.html#get-started-get-prerequisites):
 
 ```
 sudo pacman -S --needed gcc git make flex bison gperf python-pip cmake ninja ccache dfu-util
