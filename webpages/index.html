@@ -44,47 +44,70 @@
 
 <body>
   <div class="container">
-    <div class="panel panel-default">
-      <div class="panel-heading">LEDs</div>
-      <div class="panel-body">
-        <div class="row">
-          <div class="col-md-6 cell">
-            <button type="button" class="btn btn-default btn-block led" id="led1">Toggle</button>
+    <div class="col align-items-center">
+      <div class="row-sm align-items-center">
+        <div class="panel panel-default">
+          <div class="panel-heading">LEDs</div>
+          <div class="panel-body">
+            <div class="row-sm align-items-center">
+              <div class="col-sm">
+                <button type="button" class="btn btn-default btn-block led" id="led1">Toggle</button>
+              </div>
+            </div>
           </div>
         </div>
       </div>
-    </div>
-    <div class="panel panel-default">
-      <div class="panel-heading">LEDs Status'</div>
-      <div class="panel-body">
-        <div id="led-status" class="alert alert-info" role="alert"><b>OFF</b></div>
-      </div>
-    </div>
-    <div class="panel panel-default">
-      <div class="panel-heading">PWM Frequency</div>
-      <div class="panel-body">
-        <div class="col">
-          <div class="row-sm cell">
-            <div id="pwm-freq" class="alert alert-warning" role="alert"><b>Current Freq</b></div>
-            <input type="text" placeholder="Freq"></input>
-            <button type="button" class="btn btn-default led" id="freq-set">SET</button>
+      <div class="row-sm align-items-center">
+        <div class="panel panel-default">
+          <div class="panel-heading">LEDs Status'</div>
+          <div class="panel-body">
+            <div class="row-sm">
+              <div class="col-sm">
+                <div id="led-status" class="alert alert-info" role="alert"><b>OFF</b></div>
+              </div>
+            </div>
           </div>
         </div>
       </div>
-    </div>
-    <div class="panel panel-default">
-      <div class="panel-heading">PWM Duty Cycle</div>
-      <div class="panel-body">
-        <div class="col">
-          <div class="row-sm cell">
-            <div id="pwm-dc" class="alert alert-warning" role="alert"><b>Current Duty Cycle</b></div>
-            <input type="text" placeholder="Duty Cycle"></input>
-            <button type="button" class="btn btn-default led" id="dc-set">SET</button>
+      <div class="row-sm align-items-center">
+        <div class="panel panel-default">
+          <div class="panel-heading">PWM Frequency</div>
+          <div class="panel-body">
+            <div class="row align-items-center">
+              <div class="col-md-3">
+                <div id="pwm-freq" class="alert alert-warning" role="alert"><b>Current Freq</b></div>
+              </div>
+              <div class="col-md-3">
+                <input type="text" placeholder="Freq"></input>
+              </div>
+              <div class="col-md-3">
+                <button type="button" class="btn btn-default led" id="freq-set">SET</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="row-sm align-items-center">
+        <div class="panel panel-default">
+          <div class="panel-heading">PWM Duty Cycle</div>
+          <div class="panel-body">
+            <div class="row align-items-center">
+              <div class="col-md-3 align-items-center">
+                <div id="pwm-dc" class="alert alert-warning" role="alert"><b>Current Duty Cycle</b></div>
+              </div>
+              <div class="col-md-3">
+                <input type="text" placeholder="Duty Cycle"></input>
+              </div>
+              <div class="col-md-3">
+                <button type="button" class="btn btn-default led" id="dc-set">SET</button>
+              </div>
+            </div>
           </div>
         </div>
       </div>
     </div>
   </div>
+
 </body>
 
 </html>

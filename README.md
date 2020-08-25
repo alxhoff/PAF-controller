@@ -69,3 +69,12 @@ make
 ```
 make flash
 ```
+
+## Additional Targets
+
+### Astyle Format
+
+```
+cmake -DENABLE_ASTYLE=ON ..
+make format
+```
