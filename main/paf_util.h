@@ -25,5 +25,6 @@
  */
 
 void register_version(void);
+void get_mac_string(char *buf);
 
 #endif // __PAF_UTIL_H__

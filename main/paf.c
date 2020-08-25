@@ -35,7 +35,7 @@
 void app_main(void)
 {
 
-    paf_wifi_init();
+    paf_wifi_init_ap();
     paf_console_init();
 
     while (1) {

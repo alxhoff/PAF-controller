@@ -26,6 +26,17 @@
 #include "nvs_flash.h"
 #include "esp_console.h"
 
+void get_mac_string(char *buf)
+{
+    uint8_t mac[6];
+
+    ESP_ERROR_CHECK(esp_efuse_mac_get_default((uint8_t *)&mac));
+
+    for (int i = 0; i < 6; i++) {
+        buf += sprintf(buf, "%02X", mac[i]);
+    }
+}
+
 static int get_version(int argc, char **argv)
 {
     esp_chip_info_t info;

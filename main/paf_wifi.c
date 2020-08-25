@@ -27,14 +27,13 @@
 #include "freertos/event_groups.h"
 #include "esp_wifi.h"
 #include "esp_log.h"
+#include "esp_system.h"
 #include "esp_console.h"
 #include "argtable3/argtable3.h"
+#include "paf_config.h"
+#include "paf_util.h"
 
 #define WIFI_CONNECTED_BIT BIT0
-
-#define WIFI_SSID "PAF"
-#define WIFI_PASSWORD "paf"
-#define WIFI_DEF_TIMEOUT (10000)
 
 static struct {
     struct arg_int *timeout;
@@ -43,6 +42,7 @@ static struct {
     struct arg_end *end;
 } network_details;
 
+static char wifi_initd = 0;
 
 static EventGroupHandle_t wifi_event_group;
 
@@ -54,7 +54,7 @@ static void ip_event_handler(void)
 {
 }
 
-void paf_wifi_init(void)
+static void paf_wifi_init(void)
 {
     // Creates an LwIP core task
     tcpip_adapter_init();
@@ -73,19 +73,58 @@ void paf_wifi_init(void)
                     &wifi_event_handler, NULL));
     ESP_ERROR_CHECK(esp_event_handler_register(
                         IP_EVENT, IP_EVENT_STA_GOT_IP, &ip_event_handler, NULL));
+}
+
+void paf_wifi_init_ap(void)
+{
+    if (!wifi_initd) {
+        paf_wifi_init();
+        wifi_initd = 1;
+    }
+
+    esp_wifi_set_storage(WIFI_STORAGE_RAM);
+
+    char *ssid_mac = (char *)calloc(sizeof(char), (strlen(PAF_DEF_WIFI_SSID) + 13));
+
+    strcpy(ssid_mac, PAF_DEF_WIFI_SSID);
+    get_mac_string((char *)&ssid_mac[strlen(ssid_mac)]);
+
+    ESP_ERROR_CHECK(esp_wifi_set_mode(WIFI_MODE_AP));
+
+    wifi_config_t wifi_config = {
+        .ap = {
+            .ssid = PAF_DEF_WIFI_SSID,
+            .channel = PAF_DEF_WIFI_CHANNEL,
+            .authmode = WIFI_AUTH_OPEN,
+            .ssid_hidden = 0,
+            .max_connection = PAF_DEF_WIFI_AP_MAX_CON,
+            .beacon_interval = 100,
+        },
+    };
+    ESP_ERROR_CHECK(esp_wifi_set_config(ESP_IF_WIFI_AP, &wifi_config));
+    ESP_ERROR_CHECK(esp_wifi_start());
+}
+
+void paf_wifi_init_station(const char *ssid, const char *passwd)
+{
+    if (!wifi_initd) {
+        paf_wifi_init();
+        wifi_initd = 1;
+    }
+
+    ESP_ERROR_CHECK(esp_wifi_set_mode(WIFI_MODE_STA));
 
     wifi_config_t wifi_config = {
         // Station
         .sta = {
-            .ssid = WIFI_SSID,
-            .password = WIFI_PASSWORD,
+            .ssid = { ssid },
+            .password = { passwd },
             .scan_method = WIFI_FAST_SCAN,
             .sort_method = WIFI_CONNECT_AP_BY_SIGNAL,
             .threshold.rssi = -127,
             .threshold.authmode = WIFI_AUTH_OPEN
         },
     };
-    ESP_ERROR_CHECK(esp_wifi_set_mode(WIFI_MODE_STA));
     ESP_ERROR_CHECK(esp_wifi_set_config(ESP_IF_WIFI_STA, &wifi_config));
     ESP_ERROR_CHECK(esp_wifi_start());
 }
@@ -120,7 +159,7 @@ static int connect_wifi(int argc, char **argv)
     ESP_LOGI(__func__, "Connecting to '%s'", network_details.ssid->sval[0]);
 
     if (!network_details.timeout->count) {
-        network_details.timeout->ival[0] = WIFI_DEF_TIMEOUT;
+        network_details.timeout->ival[0] = PAF_DEF_WIFI_TIMEOUT;
     }
 
     bool connected = wifi_join(network_details.ssid->sval[0],
