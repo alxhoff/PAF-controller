@@ -32,8 +32,12 @@
 
 #include "../webpages/index.h"
 
+#include "paf_config.h"
+
 const static char http_html_hdr[] =
     "HTTP/1.1 200 OK\nContent-type: text/html\n\n";
+
+static TaskHandle_t webserverHandle;
 
 static void http_server_netconn_serve(struct netconn *conn)
 {
@@ -102,4 +106,15 @@ static void http_server_task(void *pvParameters)
         vTaskDelay(1);
     }
     while (err == ERR_OK);
+}
+
+int paf_webserver_init(void)
+{
+    if (xTaskCreatePinnedToCore(http_server_task, "webserver",
+                                PAF_WEBSERVER_STACK, NULL,
+                                PAF_WEBSERVER_PRIORITY, &webserverHandle,
+                                PAF_WEBSERVER_CORE) != pdPASS) {
+        return -1;
+    }
+    return 0;
 }

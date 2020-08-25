@@ -24,6 +24,6 @@
 @endverbatim
  */
 
-static void http_server_task(void *pvParameters);
+int paf_webserver_init(void);
 
 #endif // __PAF_WEBSERVER_H__

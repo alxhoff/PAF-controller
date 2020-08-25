@@ -31,15 +31,16 @@
 #include "paf_flash.h"
 #include "paf_wifi.h"
 #include "paf_webserver.h"
+#include "paf_led.h"
 
 void app_main(void)
 {
+    vTaskDelay(pdMS_TO_TICKS(100));
 
     paf_wifi_init_ap();
     paf_console_init();
-
-    while (1) {
-        vTaskDelay(1000);
-    }
+    paf_flash_init();
+    paf_webserver_init();
+    paf_led_init();
 
 }

@@ -24,11 +24,10 @@
 @endverbatim
  */
 
-#include "paf_config.h"
-
-#define PAF_LED_TIMER LEDC_TIMER_0
-#define PAF_LED_MODE LEDC_HIGH_SPEED_MODE
-#define PAF_LED_GPIO PAF_DEF_LED_GPIO
-#define PAF_LED_CHANNEL LEDC_CHANNEL_0
+int paf_led_init(void);
+int paf_led_set_dc(int duty_cycle);
+int paf_led_get_dc(void);
+int paf_led_set_freq(int freq);
+int paf_led_get_freq(void);
 
 #endif // __PAF_LED_H__

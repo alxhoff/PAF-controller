@@ -27,6 +27,11 @@
 #include "paf_config.h"
 #include "paf_led.h"
 
+#define PAF_LED_TIMER LEDC_TIMER_0
+#define PAF_LED_MODE LEDC_HIGH_SPEED_MODE
+#define PAF_LED_GPIO PAF_DEF_LED_GPIO
+#define PAF_LED_CHANNEL LEDC_CHANNEL_0
+
 ledc_timer_config_t ledc_timer = {
     .duty_resolution = LEDC_TIMER_13_BIT,
     .freq_hz = PAF_DEF_LED_FREQ,
