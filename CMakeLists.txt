@@ -71,3 +71,9 @@ if(ENABLE_ASTYLE)
         )
     endif()
 endif()
+
+ADD_CUSTOM_TARGET(
+    debug
+    COMMAND openocd -f $ENV{OPENOCD_SCRIPTS}/target/esp32.cfg -f $ENV{OPENOCD_SCRIPTS}/interface/jlink.cfg
+    COMMAND xtensa-esp32-elf-gdb -tui -x ${CMAKE_CURRENT_LIST_DIR}/GDBCommands ${CMAKE_CURRENT_LIST_DIR}/build/${CMAKE_PROJECT_NAME}.elf
+    )
