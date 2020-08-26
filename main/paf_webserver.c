@@ -34,9 +34,6 @@
 
 #include "paf_config.h"
 
-const static char http_html_hdr[] =
-    "HTTP/1.1 200 OK\nContent-type: text/html\n\n";
-
 static TaskHandle_t webserverHandle;
 
 static void http_server_netconn_serve(struct netconn *conn)
