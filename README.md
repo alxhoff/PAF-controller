@@ -31,6 +31,10 @@ yaourt openocd-esp32
 
 ### ESP-IDF
 
+*Note: by default the IDF install scripts place the toolchain and openocd
+version into the directory `~/.espressif`, I have made the assumption that this
+is where the tooling is always located in the CMake.
+
 ```
 mkdir ~/esp 
 cd ~/esp
@@ -38,6 +42,26 @@ git clone --recursive https://github.com/espressif/esp-idf.git
 cd esp-idf
 ./install.sh
 ```
+
+#### Python Packages
+
+I had troubles installing proper versions of certain packages to satisfy the 
+IDF's dependencies. Namely the packages `pygdbmi` and `gdbgui`.
+
+To fix such dependencies manually uninstall the packages using `pip`
+
+```
+pip uninstall pygdbmi
+```
+
+and then install the specific version required (given by IDF script output)
+
+```
+pip install -I pygdbmi==0.9.0.2
+```
+
+You might need to play with the order in which you install the packages as those with
+dependencies might install the others and with a incorrect version.
 
 ### Environment Variables 
 
@@ -63,6 +87,17 @@ cd build
 cmake ..
 make
 ```
+
+## Debugging Using JLink
+
+```
+make debug
+```
+
+Additionally you can specify your own OpenOCD version to use using `-DESP_OPENOCD`.
+This for instance can be used to use the AUR OpenOCD version, although CMake first
+checks if this version of OpenOCD has been installed before searching for the
+toolchain version in `~/espressif`.
 
 ## Flashing
 

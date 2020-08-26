@@ -72,8 +72,23 @@ if(ENABLE_ASTYLE)
     endif()
 endif()
 
-ADD_CUSTOM_TARGET(
-    debug
-    COMMAND openocd -f $ENV{OPENOCD_SCRIPTS}/target/esp32.cfg -f $ENV{OPENOCD_SCRIPTS}/interface/jlink.cfg
-    COMMAND xtensa-esp32-elf-gdb -tui -x ${CMAKE_CURRENT_LIST_DIR}/GDBCommands ${CMAKE_CURRENT_LIST_DIR}/build/${CMAKE_PROJECT_NAME}.elf
-    )
+IF(NOT ESP_OPENOCD)
+    FIND_PROGRAM(ESP_OPENOCD openocd-esp32)
+    IF(ESP_OPENOCD STREQUAL "ESP_OPENOCD-NOTFOUND")
+        FIND_PROGRAM(ESP_OPENOCD openocd
+            HINTS $ENV{HOME}/.espressif/tools
+            PATH_SUFFIXES openocd-esp32)
+    ENDIF()
+ENDIF()
+
+IF(ESP_OPENOCD STREQUAL "ESP_OPENOCD-NOTFOUND")
+    MESSAGE(STATUS "openocd-esp32 not found, debugging target unavailable")
+ELSE()
+    MESSAGE(STATUS "openocd-esp32 found: ${ESP_OPENOCD}, debugging target available")
+    ADD_CUSTOM_TARGET(
+        debug
+        COMMAND ${ESP_OPENOCD} -f $ENV{OPENOCD_SCRIPTS}/target/esp32.cfg -f $ENV{OPENOCD_SCRIPTS}/interface/jlink.cfg
+        COMMAND xtensa-esp32-elf-gdb -tui -x ${CMAKE_CURRENT_LIST_DIR}/GDBCommands ${CMAKE_CURRENT_LIST_DIR}/build/${CMAKE_PROJECT_NAME}.elf
+        )
+ENDIF()
+
