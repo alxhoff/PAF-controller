@@ -1,0 +1,3 @@
+(fp_lib_table
+  (lib (name PAF_controller)(type KiCad)(uri /home/alxhoff/git/GitHub/PAF-controller/PCB/Lib/PAF_controller.pretty)(options "")(descr ""))
+)
