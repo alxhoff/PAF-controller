@@ -32,6 +32,7 @@
 #include "argtable3/argtable3.h"
 #include "paf_config.h"
 #include "paf_util.h"
+#include "paf_flash.h"
 
 #define WIFI_CONNECTED_BIT BIT0
 
@@ -56,6 +57,10 @@ static void ip_event_handler(void)
 
 static void paf_wifi_init(void)
 {
+    if (!paf_flash_is_initd()) {
+        paf_flash_init();
+    }
+
     // Creates an LwIP core task
     tcpip_adapter_init();
 
@@ -103,6 +108,9 @@ void paf_wifi_init_ap(void)
     };
     ESP_ERROR_CHECK(esp_wifi_set_config(ESP_IF_WIFI_AP, &wifi_config));
     ESP_ERROR_CHECK(esp_wifi_start());
+
+    char ip_buf[17] = {0};
+    ESP_LOGI(__func__, "AP created with IP: %s", (char *)&ip_buf);
 }
 
 void paf_wifi_init_station(const char *ssid, const char *passwd)

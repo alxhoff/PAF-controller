@@ -24,6 +24,7 @@
 @endverbatim
  */
 
+int get_ap_ip_string(char *buf);
 void register_version(void);
 void get_mac_string(char *buf);
 

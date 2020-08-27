@@ -25,16 +25,25 @@
 #include "esp_err.h"
 #include "nvs_flash.h"
 
+static char paf_flash_initd = 0;
+
+int paf_flash_is_initd(void)
+{
+    return paf_flash_initd;
+}
+
 int paf_flash_init(void)
 {
-
-    esp_err_t ret = nvs_flash_init();
-    if (ret == ESP_ERR_NVS_NO_FREE_PAGES ||
-        ret == ESP_ERR_NVS_NEW_VERSION_FOUND) {
-        ESP_ERROR_CHECK(nvs_flash_erase());
-        ret = nvs_flash_init();
+    if (!paf_flash_initd) {
+        esp_err_t ret = nvs_flash_init();
+        if (ret == ESP_ERR_NVS_NO_FREE_PAGES ||
+            ret == ESP_ERR_NVS_NEW_VERSION_FOUND) {
+            ESP_ERROR_CHECK(nvs_flash_erase());
+            ret = nvs_flash_init();
+        }
+        ESP_ERROR_CHECK(ret);
+        paf_flash_initd = 1;
     }
-    ESP_ERROR_CHECK(ret);
 
     return 0;
 }

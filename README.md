@@ -105,6 +105,17 @@ toolchain version in `~/espressif`.
 make flash
 ```
 
+## Connecting to UART
+
+The IDF provides an easy to use UART "monitor" that can be used by appending
+monitor to the target, ie. `make flash monitor`
+
+Otherwise it can be used as its own target
+
+```
+make monitor
+```
+
 ## Additional Targets
 
 ### Astyle Format

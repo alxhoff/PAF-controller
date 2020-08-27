@@ -35,6 +35,9 @@
 #include "paf_util.h"
 #include "paf_wifi.h"
 #include "paf_flash.h"
+#include "paf_config.h"
+
+static xTaskHandle consoleHandle = NULL;
 
 void register_commands(void)
 {
@@ -89,7 +92,7 @@ void console_task(void *pvParameters)
     const char *prompt = LOG_COLOR_I "esp32> " LOG_RESET_COLOR;
 
     printf("\n ==================================================\n");
-    printf(" |              PAF Console                 |\n");
+    printf(" |                   PAF Console                  |\n");
     printf(" |                                                |\n");
     printf(" |     Print 'help' to gain overview of commands  |\n");
     printf(" |                                                |\n");
@@ -148,6 +151,9 @@ int paf_console_init(void)
     /* Register commands */
     esp_console_register_help_command();
     register_commands();
+
+    xTaskCreatePinnedToCore(console_task, "console", PAF_CONSOLE_STACK,
+                            NULL, PAF_CONSOLE_PRIORITY, &consoleHandle, PAF_CONSOLE_CORE);
 
     return 0;
 }

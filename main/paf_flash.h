@@ -24,6 +24,7 @@
 @endverbatim
  */
 
+int paf_flash_is_initd(void);
 int paf_flash_init(void);
 
 #endif // __PAF_FLASH_H__

@@ -93,12 +93,17 @@ static void http_server_task(void *pvParameters)
     conn = netconn_new(NETCONN_TCP);
     netconn_bind(conn, NULL, 80);
     netconn_listen(conn);
+    printf("Webserver listening on port 80 (http)\n");
 
     do {
         err = netconn_accept(conn, &newconn);
         if (err == ERR_OK) {
-            http_server_netconn_serve(newconn);
+            /** http_server_netconn_serve(newconn); */
+            printf("connection\n");
             netconn_delete(newconn);
+        }
+        else {
+            printf("Connection failed\n");
         }
         vTaskDelay(1);
     }

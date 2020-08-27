@@ -25,6 +25,17 @@
 #include "esp_system.h"
 #include "nvs_flash.h"
 #include "esp_console.h"
+#include "esp_wifi.h"
+#include "esp_log.h"
+
+//TODO
+int get_ap_ip_string(char *buf)
+{
+    tcpip_adapter_ip_info_t ip_info;
+    ESP_ERROR_CHECK(tcpip_adapter_get_ip_info(TCPIP_ADAPTER_IF_AP, &ip_info));
+    ESP_LOGI(__func__, "%zu, %s", (u32_t)(ip_info.ip.addr), ip4addr_ntoa(&ip_info.ip));
+    return sprintf(buf, "%s", ip4addr_ntoa(&ip_info.ip));
+}
 
 void get_mac_string(char *buf)
 {
