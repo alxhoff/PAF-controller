@@ -35,16 +35,27 @@
 
 static httpd_handle_t http_server = NULL;
 
+const static char http_200_hdr[] = "200 OK";
+const static char http_content_type_html[] = "text/html";
+
 static esp_err_t http_server_get_root(httpd_req_t *req)
 {
     ESP_LOGI(__func__, "GET root: %s", req->uri);
+    httpd_resp_set_status(req, http_200_hdr);
+    httpd_resp_set_type(req, http_content_type_html);
     httpd_resp_send(req, (const char *)index_html, HTTPD_RESP_USE_STRLEN);
+    return ESP_OK;
+}
+
+static esp_err_t http_server_get_btn1(httpd_req_t *req)
+{
+    ESP_LOGI(__func__, "GET btn1");
     return ESP_OK;
 }
 
 static esp_err_t http_server_get_led1(httpd_req_t *req)
 {
-    ESP_LOGI(__func__, "GET root");
+    ESP_LOGI(__func__, "GET led1");
     return ESP_OK;
 }
 
@@ -54,9 +65,21 @@ static esp_err_t http_server_get_freq(httpd_req_t *req)
     return ESP_OK;
 }
 
+static esp_err_t http_server_get_set_freq(httpd_req_t *req)
+{
+    ESP_LOGI(__func__, "GET set freq");
+    return ESP_OK;
+}
+
 static esp_err_t http_server_get_duty(httpd_req_t *req)
 {
     ESP_LOGI(__func__, "GET duty");
+    return ESP_OK;
+}
+
+static esp_err_t http_server_get_set_duty(httpd_req_t *req)
+{
+    ESP_LOGI(__func__, "GET set duty");
     return ESP_OK;
 }
 
@@ -78,9 +101,16 @@ static const httpd_uri_t http_post_request = {
 };
 
 static const httpd_uri_t http_get_root = {
-    .uri = "/html",
+    .uri = "/",
     .method = HTTP_GET,
     .handler = http_server_get_root,
+    .user_ctx = NULL,
+};
+
+static const httpd_uri_t http_get_btn1 = {
+    .uri = "/btn1",
+    .method = HTTP_GET,
+    .handler = http_server_get_led1,
     .user_ctx = NULL,
 };
 
@@ -98,13 +128,26 @@ static const httpd_uri_t http_get_freq = {
     .user_ctx = NULL,
 };
 
+static const httpd_uri_t http_get_set_freq = {
+    .uri = "/freq-set",
+    .method = HTTP_GET,
+    .handler = http_server_get_set_freq,
+    .user_ctx = NULL,
+};
+
 static const httpd_uri_t http_get_duty = {
     .uri = "/dutycycle",
+    .method = HTTP_GET,
+    .handler = http_server_get_set_duty,
+    .user_ctx = NULL,
+};
+
+static const httpd_uri_t http_get_set_duty = {
+    .uri = "/dc-set",
     .method = HTTP_GET,
     .handler = http_server_get_duty,
     .user_ctx = NULL,
 };
-
 static const httpd_uri_t http_get_status = {
     .uri = "/status",
     .method = HTTP_GET,
@@ -123,11 +166,17 @@ int paf_webserver_init(void)
             httpd_register_uri_handler(http_server,
                                        &http_get_root);
             httpd_register_uri_handler(http_server,
+                                       &http_get_btn1);
+            httpd_register_uri_handler(http_server,
                                        &http_get_led1);
             httpd_register_uri_handler(http_server,
                                        &http_get_freq);
             httpd_register_uri_handler(http_server,
+                                       &http_get_set_freq);
+            httpd_register_uri_handler(http_server,
                                        &http_get_duty);
+            httpd_register_uri_handler(http_server,
+                                       &http_get_set_duty);
             httpd_register_uri_handler(http_server,
                                        &http_get_status);
             ESP_LOGI(__func__, "Webverser GET handlers registered");
