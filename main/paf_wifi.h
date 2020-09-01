@@ -27,6 +27,5 @@
 
 void paf_wifi_init_ap(void);
 void paf_wifi_init_station(const char *ssid, const char *passwd);
-void register_connect_wifi(void);
 
 #endif // __PAF_WIFI_H__

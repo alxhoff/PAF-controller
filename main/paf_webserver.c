@@ -26,97 +26,118 @@
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 
-#include "lwip/api.h"
-#include "lwip/err.h"
-#include "lwip/netdb.h"
+#include "esp_log.h"
+#include "esp_http_server.h"
 
 #include "../webpages/index.h"
 
 #include "paf_config.h"
 
-static TaskHandle_t webserverHandle;
+static httpd_handle_t http_server = NULL;
 
-static void http_server_netconn_serve(struct netconn *conn)
+static esp_err_t http_server_get_root(httpd_req_t *req)
 {
-    struct netbuf *inbuf;
-    char *buf;
-    u16_t buflen;
-    err_t err;
-
-    err = netconn_recv(conn, &inbuf);
-
-    if (err == ERR_OK) {
-        netbuf_data(inbuf, (void **)&buf, &buflen);
-
-        char *first_line = strtok(buf, "\n");
-
-        if (first_line) {
-            // default page
-            if ((buflen >= 5) && (strncmp(buf, "GET /", 5) == 0)) {
-                if (strncmp((char const *)buf,
-                            "GET /index.html", 15) == 0) {
-                    netconn_write(conn,
-                                  (const unsigned char *)
-                                  index_html,
-                                  index_html_len,
-                                  NETCONN_NOCOPY);
-                }
-                if (strncmp((char const *)buf, "GET /led1",
-                            9) == 0) {
-                    //TODO toggle led
-                }
-                if (strncmp((char const *)buf, "GET /frequency",
-                            14) == 0) {
-                    //TODO set PWM freq
-                }
-                if (strncmp((char const *)buf, "GET /dutycycle",
-                            14) == 0) {
-                    //TODO set PWM duty cycle
-                }
-                if (strncmp((char const *)buf, "GET /status",
-                            11) == 0) {
-                    //TODO get LED status
-                }
-            }
-        }
-    }
-
-    netconn_close(conn);
-    netconn_delete(inbuf);
+    ESP_LOGI(__func__, "GET root: %s", req->uri);
+    httpd_resp_send(req, (const char *)index_html, HTTPD_RESP_USE_STRLEN);
+    return ESP_OK;
 }
 
-static void http_server_task(void *pvParameters)
+static esp_err_t http_server_get_led1(httpd_req_t *req)
 {
-    struct netconn *conn, *newconn;
-    err_t err;
-
-    conn = netconn_new(NETCONN_TCP);
-    netconn_bind(conn, NULL, 80);
-    netconn_listen(conn);
-    printf("Webserver listening on port 80 (http)\n");
-
-    do {
-        err = netconn_accept(conn, &newconn);
-        if (err == ERR_OK) {
-            /** http_server_netconn_serve(newconn); */
-            printf("connection\n");
-            netconn_delete(newconn);
-        }
-        else {
-            printf("Connection failed\n");
-        }
-        vTaskDelay(1);
-    }
-    while (err == ERR_OK);
+    ESP_LOGI(__func__, "GET root");
+    return ESP_OK;
 }
+
+static esp_err_t http_server_get_freq(httpd_req_t *req)
+{
+    ESP_LOGI(__func__, "GET freq");
+    return ESP_OK;
+}
+
+static esp_err_t http_server_get_duty(httpd_req_t *req)
+{
+    ESP_LOGI(__func__, "GET duty");
+    return ESP_OK;
+}
+
+static esp_err_t http_server_get_status(httpd_req_t *req)
+{
+    ESP_LOGI(__func__, "GET status");
+    return ESP_OK;
+}
+
+static esp_err_t http_server_post(httpd_req_t *req)
+{
+    return ESP_OK;
+}
+
+static const httpd_uri_t http_post_request = {
+    .uri = "*",
+    .method = HTTP_POST,
+    .handler = http_server_post,
+};
+
+static const httpd_uri_t http_get_root = {
+    .uri = "/html",
+    .method = HTTP_GET,
+    .handler = http_server_get_root,
+    .user_ctx = NULL,
+};
+
+static const httpd_uri_t http_get_led1 = {
+    .uri = "/led1",
+    .method = HTTP_GET,
+    .handler = http_server_get_led1,
+    .user_ctx = NULL,
+};
+
+static const httpd_uri_t http_get_freq = {
+    .uri = "/frequency",
+    .method = HTTP_GET,
+    .handler = http_server_get_freq,
+    .user_ctx = NULL,
+};
+
+static const httpd_uri_t http_get_duty = {
+    .uri = "/dutycycle",
+    .method = HTTP_GET,
+    .handler = http_server_get_duty,
+    .user_ctx = NULL,
+};
+
+static const httpd_uri_t http_get_status = {
+    .uri = "/status",
+    .method = HTTP_GET,
+    .handler = http_server_get_status,
+    .user_ctx = NULL,
+};
 
 int paf_webserver_init(void)
 {
-    if (xTaskCreatePinnedToCore(http_server_task, "webserver",
-                                PAF_WEBSERVER_STACK, NULL,
-                                PAF_WEBSERVER_PRIORITY, &webserverHandle,
-                                PAF_WEBSERVER_CORE) != pdPASS) {
-        return -1;
+    if (http_server == NULL) {
+        httpd_config_t http_config = HTTPD_DEFAULT_CONFIG();
+        http_config.uri_match_fn = httpd_uri_match_wildcard;
+
+        if (httpd_start(&http_server, &http_config) == ESP_OK) {
+            ESP_LOGI(__func__, "Webserver started");
+            httpd_register_uri_handler(http_server,
+                                       &http_get_root);
+            httpd_register_uri_handler(http_server,
+                                       &http_get_led1);
+            httpd_register_uri_handler(http_server,
+                                       &http_get_freq);
+            httpd_register_uri_handler(http_server,
+                                       &http_get_duty);
+            httpd_register_uri_handler(http_server,
+                                       &http_get_status);
+            ESP_LOGI(__func__, "Webverser GET handlers registered");
+            httpd_register_uri_handler(http_server,
+                                       &http_post_request);
+            ESP_LOGI(__func__, "Webverser POST handler registered");
+        }
+        else {
+            return -1;
+        }
     }
     return 0;
 }

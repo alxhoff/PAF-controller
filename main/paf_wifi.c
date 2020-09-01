@@ -23,6 +23,7 @@
  */
 
 #include <string.h>
+#include "esp_netif.h"
 #include "freertos/FreeRTOS.h"
 #include "freertos/event_groups.h"
 #include "esp_wifi.h"
@@ -33,71 +34,78 @@
 #include "paf_config.h"
 #include "paf_util.h"
 #include "paf_flash.h"
+#include "lwip/netdb.h"
 
 #define WIFI_CONNECTED_BIT BIT0
 
-static struct {
-    struct arg_int *timeout;
-    struct arg_str *ssid;
-    struct arg_str *password;
-    struct arg_end *end;
-} network_details;
-
 static char wifi_initd = 0;
+static esp_netif_t *esp_netif_ap = NULL;
+static wifi_config_t *wifi_config = NULL;
+static EventGroupHandle_t wifi_event_group = NULL;
 
-static EventGroupHandle_t wifi_event_group;
-
-static void wifi_event_handler(void)
+static void wifi_event_handler(void *arg, esp_event_base_t event_base,
+                               int32_t event_id, void *event_data)
 {
 }
 
-static void ip_event_handler(void)
+static void ip_event_handler(void *arg, esp_event_base_t event_base,
+                             int32_t event_id, void *event_data)
 {
-}
-
-static void paf_wifi_init(void)
-{
-    if (!paf_flash_is_initd()) {
-        paf_flash_init();
-    }
-
-    // Creates an LwIP core task
-    tcpip_adapter_init();
-
-    wifi_event_group = xEventGroupCreate();
-    // Create default event look for system events
-    ESP_ERROR_CHECK(esp_event_loop_create_default());
-
-    // Init WiFi driver resources
-    wifi_init_config_t cfg = WIFI_INIT_CONFIG_DEFAULT();
-    ESP_ERROR_CHECK(esp_wifi_init(&cfg));
-
-    // Register wifi_event_handler to handle all events with base WIFI_EVENT
-    // event_base, event_id, event_handler, event_args
-    ESP_ERROR_CHECK(esp_event_handler_register(WIFI_EVENT, ESP_EVENT_ANY_ID,
-                    &wifi_event_handler, NULL));
-    ESP_ERROR_CHECK(esp_event_handler_register(
-                        IP_EVENT, IP_EVENT_STA_GOT_IP, &ip_event_handler, NULL));
 }
 
 void paf_wifi_init_ap(void)
 {
-    if (!wifi_initd) {
-        paf_wifi_init();
-        wifi_initd = 1;
+    if (!paf_flash_is_initd()) {
+        paf_flash_init();
+    }
+    if (wifi_initd) {
+        return;
     }
 
-    esp_wifi_set_storage(WIFI_STORAGE_RAM);
+    wifi_config = (wifi_config_t *)calloc(1, sizeof(wifi_config_t));
+    wifi_event_group = xEventGroupCreate();
+    ESP_LOGI(__func__, "Wifi event group created");
 
-    char *ssid_mac = (char *)calloc(sizeof(char), (strlen(PAF_DEF_WIFI_SSID) + 13));
+    // Creates an LwIP core task
+    ESP_ERROR_CHECK(esp_netif_init());
+    ESP_LOGI(__func__, "Netif init'd");
 
-    strcpy(ssid_mac, PAF_DEF_WIFI_SSID);
-    get_mac_string((char *)&ssid_mac[strlen(ssid_mac)]);
+    // Create default event look for system events
+    ESP_ERROR_CHECK(esp_event_loop_create_default());
+    ESP_LOGI(__func__, "Event loop created");
 
-    ESP_ERROR_CHECK(esp_wifi_set_mode(WIFI_MODE_AP));
+    esp_netif_ap = esp_netif_create_default_wifi_ap();
+
+    // Init WiFi driver resources
+    wifi_init_config_t cfg = WIFI_INIT_CONFIG_DEFAULT();
+    ESP_ERROR_CHECK(esp_wifi_init(&cfg));
+    ESP_LOGI(__func__, "Wifi init'd");
+    ESP_ERROR_CHECK(esp_wifi_set_storage(WIFI_STORAGE_RAM));
+    ESP_LOGI(__func__, "Storage set to RAM");
+
+    //Event handles
+    esp_event_handler_instance_t instance_wifi_event;
+    esp_event_handler_instance_t instance_ip_event;
+
+    // Register wifi_event_handler to handle all events with base WIFI_EVENT
+    // event_base, event_id, event_handler, event_args
+    ESP_ERROR_CHECK(esp_event_handler_instance_register(
+                        WIFI_EVENT, ESP_EVENT_ANY_ID, &wifi_event_handler, NULL,
+                        &instance_wifi_event));
+    ESP_LOGI(__func__, "Wifi event handler registered");
+    ESP_ERROR_CHECK(esp_event_handler_instance_register(
+                        IP_EVENT, ESP_EVENT_ANY_ID, &ip_event_handler, NULL,
+                        &instance_ip_event));
+    ESP_LOGI(__func__, "IP event handler registered");
+
+    char ssid_mac_str[32] = { 0 };
+    strcpy((char *)ssid_mac_str, PAF_DEF_WIFI_SSID);
+    strcat((char *)ssid_mac_str, "_");
+    get_mac_string((char *)&ssid_mac_str[strlen(ssid_mac_str)]);
 
     wifi_config_t wifi_config = {
         .ap = {
+            .ssid_len = 0,
             .ssid = PAF_DEF_WIFI_SSID,
             .channel = PAF_DEF_WIFI_CHANNEL,
             .authmode = WIFI_AUTH_OPEN,
@@ -106,97 +114,31 @@ void paf_wifi_init_ap(void)
             .beacon_interval = 100,
         },
     };
+
+    memcpy(wifi_config.ap.ssid, ssid_mac_str, sizeof(wifi_config.ap.ssid));
+    ESP_LOGI(__func__, "SSID: %s\n", wifi_config.ap.ssid);
+
+    esp_netif_dhcps_stop(esp_netif_ap);
+    ESP_LOGI(__func__, "DHCP stopped");
+    esp_netif_ip_info_t ap_ip_info;
+    memset(&ap_ip_info, 0x00, sizeof(ap_ip_info));
+    inet_pton(AF_INET, PAF_DEF_AP_IP, &ap_ip_info.ip);
+    inet_pton(AF_INET, PAF_DEF_GATEWAY_IP, &ap_ip_info.gw);
+    inet_pton(AF_INET, PAF_DEF_NETMASK, &ap_ip_info.netmask);
+    ESP_LOGI(__func__, "Setting IP info");
+    ESP_LOGI(__func__, "IP: %s", inet_ntoa(ap_ip_info.ip));
+    ESP_LOGI(__func__, "GW: %s", inet_ntoa(ap_ip_info.gw));
+    ESP_LOGI(__func__, "NM: %s", inet_ntoa(ap_ip_info.netmask));
+    ESP_ERROR_CHECK(esp_netif_set_ip_info(esp_netif_ap, &ap_ip_info));
+    ESP_LOGI(__func__, "IP info set");
+    ESP_ERROR_CHECK(esp_netif_dhcps_start(esp_netif_ap));
+    ESP_LOGI(__func__, "DHCP stared");
+    ESP_ERROR_CHECK(esp_wifi_set_mode(WIFI_MODE_APSTA));
+    ESP_LOGI(__func__, "Wifi mode set to APSTA");
     ESP_ERROR_CHECK(esp_wifi_set_config(ESP_IF_WIFI_AP, &wifi_config));
+    ESP_LOGI(__func__, "Wifi config'd");
     ESP_ERROR_CHECK(esp_wifi_start());
+    ESP_LOGI(__func__, "Wifi started");
 
-    char ip_buf[17] = {0};
-    ESP_LOGI(__func__, "AP created with IP: %s", (char *)&ip_buf);
-}
-
-void paf_wifi_init_station(const char *ssid, const char *passwd)
-{
-    if (!wifi_initd) {
-        paf_wifi_init();
-        wifi_initd = 1;
-    }
-
-    ESP_ERROR_CHECK(esp_wifi_set_mode(WIFI_MODE_STA));
-
-    wifi_config_t wifi_config = {
-        // Station
-        .sta = {
-            .ssid = { ssid },
-            .password = { passwd },
-            .scan_method = WIFI_FAST_SCAN,
-            .sort_method = WIFI_CONNECT_AP_BY_SIGNAL,
-            .threshold.rssi = -127,
-            .threshold.authmode = WIFI_AUTH_OPEN
-        },
-    };
-    ESP_ERROR_CHECK(esp_wifi_set_config(ESP_IF_WIFI_STA, &wifi_config));
-    ESP_ERROR_CHECK(esp_wifi_start());
-}
-
-static bool wifi_join(const char *ssid, const char *pass, int timeout_ms)
-{
-    wifi_config_t cfg = { 0 };
-    strlcpy((char *)cfg.sta.ssid, ssid, sizeof(cfg.sta.ssid));
-    if (pass)
-        strlcpy((char *)cfg.sta.password, pass,
-                sizeof(cfg.sta.password));
-
-    ESP_ERROR_CHECK(esp_wifi_set_mode(WIFI_MODE_STA));
-    ESP_ERROR_CHECK(esp_wifi_set_config(ESP_IF_WIFI_STA, &cfg));
-    ESP_ERROR_CHECK(esp_wifi_connect());
-
-    int bits = xEventGroupWaitBits(wifi_event_group, WIFI_CONNECTED_BIT,
-                                   pdFALSE, pdTRUE,
-                                   timeout_ms / portTICK_PERIOD_MS);
-
-    return (bits & WIFI_CONNECTED_BIT) != 0;
-}
-
-static int connect_wifi(int argc, char **argv)
-{
-    int ret = arg_parse(argc, argv, (void **)&network_details);
-    if (ret) {
-        arg_print_errors(stderr, network_details.end, argv[0]);
-        return 1;
-    }
-
-    ESP_LOGI(__func__, "Connecting to '%s'", network_details.ssid->sval[0]);
-
-    if (!network_details.timeout->count) {
-        network_details.timeout->ival[0] = PAF_DEF_WIFI_TIMEOUT;
-    }
-
-    bool connected = wifi_join(network_details.ssid->sval[0],
-                               network_details.password->sval[0],
-                               network_details.timeout->ival[0]);
-
-    if (!connected) {
-        ESP_LOGW(__func__, "Connection timed out");
-        return 1;
-    }
-
-    ESP_LOGI(__func__, "Connected");
-    return 0;
-}
-
-void register_connect_wifi(void)
-{
-    network_details.timeout =
-        arg_int0(NULL, "timeout", "<t>", "Connection timeout, ms");
-    network_details.ssid = arg_str0(NULL, NULL, "<ssid>", "SSID of AP");
-    network_details.password =
-        arg_str1(NULL, NULL, "<password>", "PSK of AP");
-    network_details.end = arg_end(2);
-    const esp_console_cmd_t cmd = {
-        .command = "connect",
-        .help = "Connect to a WiFi network",
-        .hint = NULL,
-        .func = &connect_wifi,
-        .argtable = &network_details,
-    };
-    ESP_ERROR_CHECK(esp_console_cmd_register(&cmd));
+    wifi_initd = 1;
 }

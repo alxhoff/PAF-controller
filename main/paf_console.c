@@ -33,7 +33,6 @@
 #include "linenoise/linenoise.h"
 
 #include "paf_util.h"
-#include "paf_wifi.h"
 #include "paf_flash.h"
 #include "paf_config.h"
 
@@ -42,7 +41,6 @@ static xTaskHandle consoleHandle = NULL;
 void register_commands(void)
 {
     register_version();
-    register_connect_wifi();
 }
 
 static void initialize_console(void)

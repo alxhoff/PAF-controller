@@ -36,11 +36,9 @@
 void app_main(void)
 {
     vTaskDelay(pdMS_TO_TICKS(100));
-
     paf_flash_init();
     paf_wifi_init_ap();
     paf_webserver_init();
-    /** paf_led_init(); */
+    paf_led_init();
     paf_console_init();
-
 }
