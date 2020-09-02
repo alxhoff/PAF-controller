@@ -15,12 +15,21 @@
   <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/js/bootstrap.min.js" integrity="sha384-0mSbJDEHialfmuBBQP6A4Qrprq5OVfW37PRR3j5ELqxss1yVqOtnepnHVP9aJ7xS" crossorigin="anonymous"></script>
   <script type="text/javascript">
     $(document).ready(function() {
-      $(".led").click(function(e) {
+      $("#led-toggle").click(function(e) {
         $.get($(this).attr("id"));
+        setTimeout(refreshValues, 250);
+      });
+      $("#freq-set").click(function(e) {
+        $.post($(this).attr("id"), $("#freq-val").val());
+        setTimeout(refreshValues, 250);
+      });
+      $("#dc-set").click(function(e) {
+        $.post($(this).attr("id"), $("#dc-val").val());
+        setTimeout(refreshValues, 250);
       });
 
       function refreshValues() {
-        $.get("status", function(res) {
+        $.get("led-status", function(res) {
           if (res == "OFF")
             $("#led-status").removeClass("alert-success").addClass("alert-info");
           else
@@ -34,12 +43,12 @@
         $.get("dutycycle", function(res) {
           $("#pwm-dc").find("b").html(res);
         });
-        setTimeout(refreshValues, 250);
       }
       setTimeout(refreshValues, 250);
     });
   </script>
   <meta name="viewport" content="width=device-width, initial-scale=1 user-scalable=no">
+  <link rel="icon" type="image/png" href="https://example.com/favicon.png"/>
 </head>
 
 <body>
@@ -51,7 +60,7 @@
           <div class="panel-body">
             <div class="row-sm align-items-center">
               <div class="col-sm">
-                <button type="button" class="btn btn-default btn-block led" id="led1">Toggle</button>
+                <button type="button" class="btn btn-default btn-block led" id="led-toggle">Toggle</button>
               </div>
             </div>
           </div>
@@ -78,10 +87,10 @@
                 <div id="pwm-freq" class="alert alert-warning" role="alert"><b>Current Freq</b></div>
               </div>
               <div class="col-md-3">
-                <input type="text" placeholder="Freq"></input>
+                <input type="text" id="freq-val" placeholder="Freq"></input>
               </div>
               <div class="col-md-3">
-                <button type="button" class="btn btn-default led" id="freq-set">SET</button>
+                <button type="button" class="btn btn-default set" id="freq-set">SET</button>
               </div>
             </div>
           </div>
@@ -96,10 +105,10 @@
                 <div id="pwm-dc" class="alert alert-warning" role="alert"><b>Current Duty Cycle</b></div>
               </div>
               <div class="col-md-3">
-                <input type="text" placeholder="Duty Cycle"></input>
+                <input type="text" id="dc-val" placeholder="Duty Cycle"></input>
               </div>
               <div class="col-md-3">
-                <button type="button" class="btn btn-default led" id="dc-set">SET</button>
+                <button type="button" class="btn btn-default set" id="dc-set">SET</button>
               </div>
             </div>
           </div>

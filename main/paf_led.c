@@ -24,6 +24,9 @@
 
 #include "driver/ledc.h"
 
+#include "esp_err.h"
+#include "esp_log.h"
+
 #include "paf_config.h"
 #include "paf_led.h"
 
@@ -49,21 +52,64 @@ ledc_channel_config_t ledc_channel = {
     .timer_sel = PAF_LED_TIMER,
 };
 
+static char led_status = 0;
+
+char paf_led_get_led(void)
+{
+    return led_status;
+}
+
 int paf_led_init(void)
 {
     ledc_timer_config(&ledc_timer);
 
-    ledc_channel_config(&ledc_channel);
+    ESP_ERROR_CHECK(ledc_channel_config(&ledc_channel));
 
     ledc_fade_func_install(0);
 
     return 0;
 }
 
+int paf_led_set_on(void)
+{
+    esp_err_t ret;
+    ESP_LOGI(__func__, "Setting LED on");
+    if ((ret = ledc_fade_start(ledc_channel.speed_mode,
+                               ledc_channel.channel, LEDC_FADE_NO_WAIT)) ==
+        ESP_OK) {
+        led_status = 1;
+    }
+    return ret;
+}
+
+int paf_led_set_off(void)
+{
+    esp_err_t ret;
+    ESP_LOGI(__func__, "Setting LED off");
+    if ((ret = ledc_stop(ledc_channel.speed_mode, ledc_channel.channel,
+                         0)) == ESP_OK) {
+        led_status = 0;
+    }
+    return ret;
+}
+
+int paf_led_set_toggle(void)
+{
+    ESP_LOGI(__func__, "Toggling LED %d -> %d", led_status, !led_status);
+    if (led_status) {
+        return paf_led_set_off();
+    }
+
+    return paf_led_set_on();
+}
+
 int paf_led_set_dc(int duty_cycle)
 {
-    ledc_set_duty(ledc_channel.speed_mode, ledc_channel.channel, duty_cycle);
+    ledc_set_duty(ledc_channel.speed_mode, ledc_channel.channel,
+                  duty_cycle);
     ledc_update_duty(ledc_channel.speed_mode, ledc_channel.channel);
+
+    ESP_LOGI(__func__, "DC set to %d", duty_cycle);
 
     return 0;
 }
@@ -76,6 +122,8 @@ int paf_led_get_dc(void)
 int paf_led_set_freq(int freq)
 {
     ledc_set_freq(ledc_timer.speed_mode, ledc_timer.timer_num, freq);
+
+    ESP_LOGI(__func__, "Freq set to %d", freq);
 
     return 0;
 }

@@ -32,65 +32,98 @@
 #include "../webpages/index.h"
 
 #include "paf_config.h"
+#include "paf_led.h"
 
 static httpd_handle_t http_server = NULL;
 
 const static char http_200_hdr[] = "200 OK";
 const static char http_content_type_html[] = "text/html";
 
-static esp_err_t http_server_get_root(httpd_req_t *req)
+const static char get_root[] = "/";
+const static char get_btn[] = "led-toggle";
+const static char get_led[] = "led-status";
+const static char get_freq[] = "frequency";
+const static char get_set_freq[] = "freq-set";
+const static char get_dutycycle[] = "dutycycle";
+const static char get_set_dutycycle[] = "dc-set";
+
+static esp_err_t http_server_get_handler(httpd_req_t *req)
 {
-    ESP_LOGI(__func__, "GET root: %s", req->uri);
+    ESP_LOGI(__func__, "GET %s, %u", req->uri, strlen(req->uri));
+
+    //TODO captive portal
+
     httpd_resp_set_status(req, http_200_hdr);
     httpd_resp_set_type(req, http_content_type_html);
-    httpd_resp_send(req, (const char *)index_html, HTTPD_RESP_USE_STRLEN);
-    return ESP_OK;
-}
-
-static esp_err_t http_server_get_btn1(httpd_req_t *req)
-{
-    ESP_LOGI(__func__, "GET btn1");
-    return ESP_OK;
-}
-
-static esp_err_t http_server_get_led1(httpd_req_t *req)
-{
-    ESP_LOGI(__func__, "GET led1");
-    return ESP_OK;
-}
-
-static esp_err_t http_server_get_freq(httpd_req_t *req)
-{
-    ESP_LOGI(__func__, "GET freq");
-    return ESP_OK;
-}
-
-static esp_err_t http_server_get_set_freq(httpd_req_t *req)
-{
-    ESP_LOGI(__func__, "GET set freq");
-    return ESP_OK;
-}
-
-static esp_err_t http_server_get_duty(httpd_req_t *req)
-{
-    ESP_LOGI(__func__, "GET duty");
-    return ESP_OK;
-}
-
-static esp_err_t http_server_get_set_duty(httpd_req_t *req)
-{
-    ESP_LOGI(__func__, "GET set duty");
-    return ESP_OK;
-}
-
-static esp_err_t http_server_get_status(httpd_req_t *req)
-{
-    ESP_LOGI(__func__, "GET status");
+    //ROOT
+    if ((strlen(req->uri) == 1) && (strcmp(req->uri, get_root) == 0)) {
+        httpd_resp_send(req, (const char *)index_html,
+                        HTTPD_RESP_USE_STRLEN);
+    }
+    else if (strlen(req->uri) > 1) {
+        if (strcmp(req->uri + sizeof(char), get_btn) == 0) {
+            ESP_LOGI(__func__, "Handling led btn");
+            paf_led_set_toggle();
+            httpd_resp_send(req, NULL, 0);
+        }
+        else if (strcmp(req->uri + sizeof(char), get_led) == 0) {
+            ESP_LOGI(__func__, "Handling led");
+            if (paf_led_get_led())
+                httpd_resp_send(req, "ON",
+                                HTTPD_RESP_USE_STRLEN);
+            else
+                httpd_resp_send(req, "OFF",
+                                HTTPD_RESP_USE_STRLEN);
+        }
+        else if (strcmp(req->uri + sizeof(char), get_freq) == 0) {
+            sprintf((char *)req->uri, "%d", paf_led_get_freq());
+            ESP_LOGI(__func__, "Handling freq: %s", req->uri);
+            httpd_resp_send(req, (const char *)req->uri,
+                            HTTPD_RESP_USE_STRLEN);
+        }
+        else if (strcmp(req->uri + sizeof(char), get_dutycycle) ==
+                 0) {
+            sprintf((char *)req->uri, "%d", paf_led_get_dc());
+            ESP_LOGI(__func__, "Handling dc");
+            httpd_resp_send(req, (const char *)req->uri,
+                            HTTPD_RESP_USE_STRLEN);
+        }
+        else {
+            httpd_resp_send(req, NULL, 0);
+        }
+    }
+    else {
+        httpd_resp_send(req, NULL, 0);
+    }
     return ESP_OK;
 }
 
 static esp_err_t http_server_post(httpd_req_t *req)
 {
+    static char content_buf[20];
+    int ret;
+
+    ESP_LOGI(__func__, "POST %s", req->uri);
+
+    if (strlen(req->uri) > 1) {
+        ret = httpd_req_recv(req, content_buf, req->content_len);
+        if (ret > 0) {
+            if (strcmp(req->uri + sizeof(char),
+                       get_set_dutycycle) == 0) {
+                ESP_LOGI(__func__, "Handling set dc");
+                paf_led_set_dc(atoi(content_buf));
+                httpd_resp_send(req, "DC Set",
+                                HTTPD_RESP_USE_STRLEN);
+            }
+            else if (strcmp(req->uri + sizeof(char),
+                            get_set_freq) == 0) {
+                ESP_LOGI(__func__, "Handling set freq");
+                paf_led_set_freq(atoi(content_buf));
+                httpd_resp_send(req, "Freq Set",
+                                HTTPD_RESP_USE_STRLEN);
+            }
+        }
+    }
     return ESP_OK;
 }
 
@@ -100,58 +133,10 @@ static const httpd_uri_t http_post_request = {
     .handler = http_server_post,
 };
 
-static const httpd_uri_t http_get_root = {
-    .uri = "/",
+static const httpd_uri_t http_get_request = {
+    .uri = "*",
     .method = HTTP_GET,
-    .handler = http_server_get_root,
-    .user_ctx = NULL,
-};
-
-static const httpd_uri_t http_get_btn1 = {
-    .uri = "/btn1",
-    .method = HTTP_GET,
-    .handler = http_server_get_led1,
-    .user_ctx = NULL,
-};
-
-static const httpd_uri_t http_get_led1 = {
-    .uri = "/led1",
-    .method = HTTP_GET,
-    .handler = http_server_get_led1,
-    .user_ctx = NULL,
-};
-
-static const httpd_uri_t http_get_freq = {
-    .uri = "/frequency",
-    .method = HTTP_GET,
-    .handler = http_server_get_freq,
-    .user_ctx = NULL,
-};
-
-static const httpd_uri_t http_get_set_freq = {
-    .uri = "/freq-set",
-    .method = HTTP_GET,
-    .handler = http_server_get_set_freq,
-    .user_ctx = NULL,
-};
-
-static const httpd_uri_t http_get_duty = {
-    .uri = "/dutycycle",
-    .method = HTTP_GET,
-    .handler = http_server_get_set_duty,
-    .user_ctx = NULL,
-};
-
-static const httpd_uri_t http_get_set_duty = {
-    .uri = "/dc-set",
-    .method = HTTP_GET,
-    .handler = http_server_get_duty,
-    .user_ctx = NULL,
-};
-static const httpd_uri_t http_get_status = {
-    .uri = "/status",
-    .method = HTTP_GET,
-    .handler = http_server_get_status,
+    .handler = http_server_get_handler,
     .user_ctx = NULL,
 };
 
@@ -164,21 +149,7 @@ int paf_webserver_init(void)
         if (httpd_start(&http_server, &http_config) == ESP_OK) {
             ESP_LOGI(__func__, "Webserver started");
             httpd_register_uri_handler(http_server,
-                                       &http_get_root);
-            httpd_register_uri_handler(http_server,
-                                       &http_get_btn1);
-            httpd_register_uri_handler(http_server,
-                                       &http_get_led1);
-            httpd_register_uri_handler(http_server,
-                                       &http_get_freq);
-            httpd_register_uri_handler(http_server,
-                                       &http_get_set_freq);
-            httpd_register_uri_handler(http_server,
-                                       &http_get_duty);
-            httpd_register_uri_handler(http_server,
-                                       &http_get_set_duty);
-            httpd_register_uri_handler(http_server,
-                                       &http_get_status);
+                                       &http_get_request);
             ESP_LOGI(__func__, "Webverser GET handlers registered");
             httpd_register_uri_handler(http_server,
                                        &http_post_request);

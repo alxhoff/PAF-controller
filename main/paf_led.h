@@ -24,10 +24,14 @@
 @endverbatim
  */
 
+int paf_led_set_on(void);
+int paf_led_set_off(void);
+int paf_led_set_toggle(void);
 int paf_led_init(void);
 int paf_led_set_dc(int duty_cycle);
 int paf_led_get_dc(void);
 int paf_led_set_freq(int freq);
 int paf_led_get_freq(void);
+char paf_led_get_led(void);
 
 #endif // __PAF_LED_H__

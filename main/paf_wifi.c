@@ -23,13 +23,13 @@
  */
 
 #include <string.h>
-#include "esp_netif.h"
 #include "freertos/FreeRTOS.h"
 #include "freertos/event_groups.h"
 #include "esp_wifi.h"
 #include "esp_log.h"
 #include "esp_system.h"
 #include "esp_console.h"
+#include "esp_netif.h"
 #include "argtable3/argtable3.h"
 #include "paf_config.h"
 #include "paf_util.h"
