@@ -72,25 +72,25 @@ int paf_led_init(void)
 
 int paf_led_set_on(void)
 {
-    esp_err_t ret;
+    /** esp_err_t ret; */
     ESP_LOGI(__func__, "Setting LED on");
-    if ((ret = ledc_fade_start(ledc_channel.speed_mode,
-                               ledc_channel.channel, LEDC_FADE_NO_WAIT)) ==
-        ESP_OK) {
-        led_status = 1;
-    }
-    return ret;
+    /** if ((ret = ledc_fade_start(ledc_channel.speed_mode, */
+    /**                ledc_channel.channel, LEDC_FADE_NO_WAIT)) == */
+    /**     ESP_OK) */
+    led_status = 1;
+    /** return ret; */
+    return ESP_OK;
 }
 
 int paf_led_set_off(void)
 {
-    esp_err_t ret;
+    /** esp_err_t ret; */
     ESP_LOGI(__func__, "Setting LED off");
-    if ((ret = ledc_stop(ledc_channel.speed_mode, ledc_channel.channel,
-                         0)) == ESP_OK) {
-        led_status = 0;
-    }
-    return ret;
+    /** if ((ret = ledc_stop(ledc_channel.speed_mode, ledc_channel.channel, */
+    /**              0)) == ESP_OK) */
+    led_status = 0;
+    /** return ret; */
+    return ESP_OK;
 }
 
 int paf_led_set_toggle(void)
