@@ -27,6 +27,8 @@
 #include "esp_err.h"
 #include "esp_log.h"
 
+#include "driver/gpio.h"
+
 #include "paf_config.h"
 #include "paf_led.h"
 
@@ -53,44 +55,80 @@ ledc_channel_config_t ledc_channel = {
 };
 
 static char led_status = 0;
+static paf_led_mode_t led_mode = PAF_LED_CONSOLE;
 
 char paf_led_get_led(void)
 {
     return led_status;
 }
 
-int paf_led_init(void)
+int paf_led_init(paf_led_mode_t mode)
 {
-    ledc_timer_config(&ledc_timer);
-
-    ESP_ERROR_CHECK(ledc_channel_config(&ledc_channel));
-
-    ledc_fade_func_install(0);
+    switch (mode) {
+        case PAF_LED_BINARY:
+            gpio_pad_select_gpio(PAF_DEF_LED_GPIO);
+            gpio_set_direction(PAF_DEF_LED_GPIO, GPIO_MODE_OUTPUT);
+            break;
+        case PAF_LED_PWM:
+            ledc_timer_config(&ledc_timer);
+            ESP_ERROR_CHECK(ledc_channel_config(&ledc_channel));
+            ledc_fade_func_install(0);
+            led_mode = PAF_LED_PWM;
+            break;
+        case PAF_LED_CONSOLE:
+            break;
+        default:
+            return -1;
+    }
+    led_mode = mode;
 
     return 0;
 }
 
 int paf_led_set_on(void)
 {
-    /** esp_err_t ret; */
-    ESP_LOGI(__func__, "Setting LED on");
-    /** if ((ret = ledc_fade_start(ledc_channel.speed_mode, */
-    /**                ledc_channel.channel, LEDC_FADE_NO_WAIT)) == */
-    /**     ESP_OK) */
+    esp_err_t ret = ESP_OK;
+    switch (led_mode) {
+        case PAF_LED_BINARY:
+            ret = gpio_set_level(PAF_DEF_LED_GPIO, 1);
+            break;
+        case PAF_LED_PWM:
+            ledc_fade_start(ledc_channel.speed_mode, ledc_channel.channel,
+                            LEDC_FADE_NO_WAIT);
+            break;
+        case PAF_LED_CONSOLE:
+            ESP_LOGI(__func__, "Setting LED on");
+            ret = ESP_OK;
+            break;
+        default:
+            ret = -1;
+            break;
+    }
     led_status = 1;
-    /** return ret; */
-    return ESP_OK;
+    return ret;
 }
 
 int paf_led_set_off(void)
 {
-    /** esp_err_t ret; */
-    ESP_LOGI(__func__, "Setting LED off");
-    /** if ((ret = ledc_stop(ledc_channel.speed_mode, ledc_channel.channel, */
-    /**              0)) == ESP_OK) */
+    esp_err_t ret = ESP_OK;
+    switch (led_mode) {
+        case PAF_LED_BINARY:
+            ret = gpio_set_level(PAF_DEF_LED_GPIO, 0);
+            break;
+        case PAF_LED_PWM:
+            ret = ledc_stop(ledc_channel.speed_mode, ledc_channel.channel,
+                            0);
+            break;
+        case PAF_LED_CONSOLE:
+            ESP_LOGI(__func__, "Setting LED off");
+            ret = ESP_OK;
+            break;
+        default:
+            ret = -1;
+            break;
+    }
     led_status = 0;
-    /** return ret; */
-    return ESP_OK;
+    return ret;
 }
 
 int paf_led_set_toggle(void)
@@ -105,6 +143,10 @@ int paf_led_set_toggle(void)
 
 int paf_led_set_dc(int duty_cycle)
 {
+    if (led_mode != PAF_LED_PWM) {
+        return -1;
+    }
+
     ledc_set_duty(ledc_channel.speed_mode, ledc_channel.channel,
                   duty_cycle);
     ledc_update_duty(ledc_channel.speed_mode, ledc_channel.channel);
@@ -116,11 +158,19 @@ int paf_led_set_dc(int duty_cycle)
 
 int paf_led_get_dc(void)
 {
+    if (led_mode != PAF_LED_PWM) {
+        return -1;
+    }
+
     return ledc_get_duty(ledc_channel.speed_mode, ledc_channel.channel);
 }
 
 int paf_led_set_freq(int freq)
 {
+    if (led_mode != PAF_LED_PWM) {
+        return -1;
+    }
+
     ledc_set_freq(ledc_timer.speed_mode, ledc_timer.timer_num, freq);
 
     ESP_LOGI(__func__, "Freq set to %d", freq);
@@ -130,5 +180,9 @@ int paf_led_set_freq(int freq)
 
 int paf_led_get_freq(void)
 {
+    if (led_mode != PAF_LED_PWM) {
+        return -1;
+    }
+
     return ledc_get_freq(ledc_timer.speed_mode, ledc_timer.timer_num);
 }

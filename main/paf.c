@@ -39,6 +39,6 @@ void app_main(void)
     paf_flash_init();
     paf_wifi_init_ap();
     paf_webserver_init();
-    paf_led_init();
+    paf_led_init(PAF_LED_CONSOLE);
     paf_console_init();
 }
