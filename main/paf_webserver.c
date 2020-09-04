@@ -49,7 +49,7 @@ const static char get_set_dutycycle[] = "dc-set";
 
 static esp_err_t http_server_get_handler(httpd_req_t *req)
 {
-    ESP_LOGI(__func__, "GET %s, %u", req->uri, strlen(req->uri));
+    ESP_LOGI(__func__, "GET %s", req->uri);
 
     //TODO captive portal
 
@@ -107,20 +107,33 @@ static esp_err_t http_server_post(httpd_req_t *req)
 
     if (strlen(req->uri) > 1) {
         ret = httpd_req_recv(req, content_buf, req->content_len);
-        if (ret > 0) {
-            if (strcmp(req->uri + sizeof(char),
-                       get_set_dutycycle) == 0) {
-                ESP_LOGI(__func__, "Handling set dc");
-                paf_led_set_dc(atoi(content_buf));
-                httpd_resp_send(req, "DC Set",
-                                HTTPD_RESP_USE_STRLEN);
-            }
-            else if (strcmp(req->uri + sizeof(char),
-                            get_set_freq) == 0) {
-                ESP_LOGI(__func__, "Handling set freq");
-                paf_led_set_freq(atoi(content_buf));
-                httpd_resp_send(req, "Freq Set",
-                                HTTPD_RESP_USE_STRLEN);
+        if (ret <= 20) {
+            content_buf[ret] = '\0';
+            ESP_LOGI(__func__, "POST recv %d bytes", ret);
+            if (ret > 0) {
+                if (strcmp(req->uri + sizeof(char),
+                           get_set_dutycycle) == 0) {
+                    unsigned int new_dc =
+                        (unsigned int)strtoul(
+                            content_buf, NULL, 10);
+                    ESP_LOGI(__func__,
+                             "Handling set dc: %u", new_dc);
+                    paf_led_set_dc(new_dc);
+                    httpd_resp_send(req, "DC Set",
+                                    HTTPD_RESP_USE_STRLEN);
+                }
+                else if (strcmp(req->uri + sizeof(char),
+                                get_set_freq) == 0) {
+                    unsigned int new_freq =
+                        (unsigned int)strtoul(
+                            content_buf, NULL, 10);
+                    ESP_LOGI(__func__,
+                             "Handling set freq: %u",
+                             new_freq);
+                    paf_led_set_freq(new_freq);
+                    httpd_resp_send(req, "Freq Set",
+                                    HTTPD_RESP_USE_STRLEN);
+                }
             }
         }
     }

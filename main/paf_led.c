@@ -228,9 +228,9 @@ esp_err_t paf_led_set_dc(unsigned int duty_cycle)
 
     if (paf_led_update_dc(duty_cycle) == ESP_OK) {
         ledc_cfg.ledc_dc = duty_cycle;
-        if (ledc_cfg.led_status)
-            ESP_ERROR_CHECK(ledc_update_duty(
-                                ledc_channel.speed_mode, ledc_channel.channel));
+        if (ledc_cfg.led_status) {
+            paf_led_update_pwm(FROM_CONFIG, 0, 0);
+        }
     }
 
     ESP_LOGI(__func__, "DC set to %d", duty_cycle);
