@@ -91,15 +91,21 @@ unsigned char ssd1306_get_rows(void)
 
 static esp_err_t ssd1306_write_start(void)
 {
+    if (!ssd1306_dev.i2c_cmd) {
+        ssd1306_dev.i2c_cmd = i2c_cmd_link_create();
+    }
     ESP_ERROR_CHECK(i2c_master_start(ssd1306_dev.i2c_cmd));
-    return i2c_master_write_byte(
-               ssd1306_dev.i2c_cmd,
-               (OLED_I2C_ADDRESS << 1) | I2C_MASTER_WRITE, true);
+    return i2c_master_write_byte(ssd1306_dev.i2c_cmd,
+                                 (OLED_I2C_ADDRESS << 1) | I2C_MASTER_WRITE,
+                                 true);
 }
 
 static esp_err_t ssd1306_write_end(void)
 {
-    return i2c_master_stop(ssd1306_dev.i2c_cmd);
+    esp_err_t ret = i2c_master_stop(ssd1306_dev.i2c_cmd);
+    i2c_cmd_link_delete(ssd1306_dev.i2c_cmd);
+    ssd1306_dev.i2c_cmd = NULL;
+    return ret;
 }
 
 static esp_err_t ssd1306_write_single_command(uint8_t command)
@@ -333,27 +339,33 @@ void ssd1306_refresh(char **buf, unsigned char cursor_on, int cursor_x,
     ssd1306_draw_cursor(cursor_on, cursor_x, cursor_y);
 }
 
-static void ssd1306_i2c_init(void)
+static esp_err_t ssd1306_i2c_init(void)
 {
+    esp_err_t ret;
     i2c_config_t i2c_config = {
         .mode = I2C_MODE_MASTER,
         .sda_io_num = PAF_DEF_OLED_SDA_PIN,
         .scl_io_num = PAF_DEF_OLED_SCL_PIN,
         .sda_pullup_en = GPIO_PULLUP_ENABLE,
         .scl_pullup_en = GPIO_PULLUP_ENABLE,
-        .master.clk_speed = 1000000,
+        .master.clk_speed = 100000,
     };
-    i2c_param_config(PAF_DEF_I2C_NUM, &i2c_config);
-    i2c_driver_install(PAF_DEF_I2C_NUM, I2C_MODE_MASTER, 0, 0, 0);
+    ESP_ERROR_CHECK(i2c_set_pin(PAF_DEF_I2C_NUM, PAF_DEF_OLED_SDA_PIN,
+                                PAF_DEF_OLED_SCL_PIN, true, true,
+                                I2C_MODE_MASTER));
+    ESP_ERROR_CHECK(i2c_param_config(PAF_DEF_I2C_NUM, &i2c_config));
+    ret = i2c_driver_install(PAF_DEF_I2C_NUM, I2C_MODE_MASTER, 0, 0, 0);
+    ESP_LOGI(__func__, "I2C Driver install: %s", esp_err_to_name(ret));
+    ESP_ERROR_CHECK(ret);
 
-    ssd1306_dev.i2c_cmd = i2c_cmd_link_create();
+    ESP_LOGI(__func__, "SSD1306 I2C init'd");
 
-    i2c_master_start(ssd1306_dev.i2c_cmd);
+    return ret;
 }
 
 signed char ssd1306_init(void)
 {
-    ssd1306_i2c_init();
+    ESP_ERROR_CHECK(ssd1306_i2c_init());
 
     ssd1306_dev.clear = &ssd1306_clear;
     ssd1306_dev.update = &ssd1306_update_screen;
@@ -404,6 +416,8 @@ signed char ssd1306_init(void)
     ssd1306_dev.y = 0;
 
     ssd1306_dev.initialized = 1;
+
+    ESP_LOGI(__func__, "SSD1306 init finished");
 
     return 0;
 }

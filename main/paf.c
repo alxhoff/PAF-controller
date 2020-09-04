@@ -33,11 +33,13 @@
 #include "paf_webserver.h"
 #include "paf_led.h"
 #include "paf_config.h"
+#include "esp32_ssd1306.h"
 
 void app_main(void)
 {
     vTaskDelay(pdMS_TO_TICKS(100));
-    paf_flash_init();
+    ssd1306_init();
+    ssd1306_init();
     paf_wifi_init_ap();
     paf_webserver_init();
     paf_led_init(PAF_DEF_LED_MODE);
