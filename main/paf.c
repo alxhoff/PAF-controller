@@ -32,6 +32,7 @@
 #include "paf_wifi.h"
 #include "paf_webserver.h"
 #include "paf_led.h"
+#include "paf_config.h"
 
 void app_main(void)
 {
@@ -39,6 +40,6 @@ void app_main(void)
     paf_flash_init();
     paf_wifi_init_ap();
     paf_webserver_init();
-    paf_led_init(PAF_LED_CONSOLE);
+    paf_led_init(PAF_DEF_LED_MODE);
     paf_console_init();
 }
