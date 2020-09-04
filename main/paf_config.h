@@ -28,4 +28,8 @@
 #define PAF_CONSOLE_PRIORITY 2
 #define PAF_CONSOLE_CORE tskNO_AFFINITY
 
+#define PAF_DEF_OLED_SDA_PIN (21)
+#define PAF_DEF_OLED_SCL_PIN (22)
+#define PAF_DEF_I2C_NUM I2C_NUM_0
+
 #endif // __PAF_CONFIG_H__

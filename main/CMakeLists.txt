@@ -7,5 +7,7 @@ idf_component_register(SRCS
     "paf_util.c"
     "paf_webserver.c"
     "paf_wifi.c"
+    "esp32_ssd1306.c"
+    "fonts.c"
     INCLUDE_DIRS ${PROJECT_SOURCE_DIR})
 
