@@ -89,19 +89,38 @@ unsigned char ssd1306_get_rows(void)
     return SSD1306_HEIGHT_CHARS;
 }
 
+static esp_err_t ssd1306_write_start(void)
+{
+    ESP_ERROR_CHECK(i2c_master_start(ssd1306_dev.i2c_cmd));
+    return i2c_master_write_byte(
+               ssd1306_dev.i2c_cmd,
+               (OLED_I2C_ADDRESS << 1) | I2C_MASTER_WRITE, true);
+}
+
+static esp_err_t ssd1306_write_end(void)
+{
+    return i2c_master_stop(ssd1306_dev.i2c_cmd);
+}
+
+static esp_err_t ssd1306_write_single_command(uint8_t command)
+{
+    if (ssd1306_dev.i2c_cmd) {
+        ssd1306_write_start();
+        ESP_ERROR_CHECK(i2c_master_write_byte(ssd1306_dev.i2c_cmd,
+                                              command, true));
+        ssd1306_write_end();
+        return ESP_OK;
+    }
+    return ESP_FAIL;
+}
+
 static esp_err_t ssd1306_write_command(uint8_t command)
 {
     if (ssd1306_dev.i2c_cmd) {
-        ESP_ERROR_CHECK(i2c_master_start(ssd1306_dev.i2c_cmd));
-        i2c_master_write_byte(
-            ssd1306_dev.i2c_cmd,
-            (OLED_I2C_ADDRESS << 1) | I2C_MASTER_WRITE, true);
         ESP_ERROR_CHECK(i2c_master_write_byte(ssd1306_dev.i2c_cmd,
                                               command, true));
-        ESP_ERROR_CHECK(i2c_master_stop(ssd1306_dev.i2c_cmd));
         return ESP_OK;
     }
-
     return ESP_FAIL;
 }
 
@@ -118,20 +137,14 @@ signed char ssd1306_update_screen(void)
     uint8_t i;
 
     for (i = 0; i < 8; i++) {
-        i2c_master_start(ssd1306_dev.i2c_cmd);
-        i2c_master_write_byte(
-            ssd1306_dev.i2c_cmd,
-            (OLED_I2C_ADDRESS << 1) | I2C_MASTER_WRITE, true);
-        i2c_master_write_byte(ssd1306_dev.i2c_cmd,
-                              OLED_CMD_PAGE_START_ADDR + i, true);
-        i2c_master_write_byte(ssd1306_dev.i2c_cmd,
-                              OLED_CMD_PAGE_VERT_RIGHT, true);
-        i2c_master_write_byte(ssd1306_dev.i2c_cmd,
-                              OLED_CONTROL_BYTE_CMD_STREAM, true);
+        ssd1306_write_start();
+        ssd1306_write_command(OLED_CMD_PAGE_START_ADDR + i);
+        ssd1306_write_command(OLED_CMD_PAGE_VERT_RIGHT);
+        ssd1306_write_command(OLED_CONTROL_BYTE_CMD_STREAM);
         i2c_master_write(ssd1306_dev.i2c_cmd,
                          &ssd1306_dev.buffer[ssd1306_dev.width * i],
                          ssd1306_dev.width, true);
-        i2c_master_stop(ssd1306_dev.i2c_cmd);
+        ssd1306_write_end();
     }
     return 0;
 }
@@ -342,7 +355,6 @@ signed char ssd1306_init(void)
 {
     ssd1306_i2c_init();
 
-    //functions
     ssd1306_dev.clear = &ssd1306_clear;
     ssd1306_dev.update = &ssd1306_update_screen;
     ssd1306_dev.fill = &ssd1306_fill;
@@ -355,39 +367,36 @@ signed char ssd1306_init(void)
     ssd1306_dev.font = SSD1306_FONT;
 
     /* Init LCD */
-    ssd1306_write_command(OLED_CMD_DISPLAY_OFF); //display off
-    ssd1306_write_command(
-        OLED_CMD_SET_MEMORY_ADDR_MODE); //memory addressing mode
-    ssd1306_write_command(
-        OLED_CMD_PAGE_ADDR_MODE); //00,Horizontal Addressing Mode;01,Vertical Addressing Mode;10,Page Addressing Mode (RESET);11,Invalid
-    ssd1306_write_command(
-        OLED_CMD_PAGE_START_ADDR); //Set Page Start Address for Page Addressing Mode,0-7
-    ssd1306_write_command(0xC8); //Set COM Output Scan Direction
+    ssd1306_write_start();
+    ssd1306_write_command(OLED_CMD_DISPLAY_OFF);
+    ssd1306_write_command(OLED_CMD_SET_MEMORY_ADDR_MODE);
+    ssd1306_write_command(OLED_CMD_PAGE_ADDR_MODE);
+    ssd1306_write_command(OLED_CMD_PAGE_START_ADDR);
+    ssd1306_write_command(OLED_CMD_SET_COM_SCAN_MODE);
     ssd1306_write_command(0x00); //---set low column address
     ssd1306_write_command(0x10); //---set high column address
-    ssd1306_write_command(0x40); //--set start line address
-    ssd1306_write_command(0x81); //--set contrast control register
+    ssd1306_write_command(OLED_CONTROL_BYTE_DATA_STREAM);
+    ssd1306_write_command(OLED_CMD_SET_CONTRAST);
     ssd1306_write_command(0xFF);
-    ssd1306_write_command(0xA1); //--set segment re-map 0 to 127
-    ssd1306_write_command(0xA6); //--set normal display
-    ssd1306_write_command(0xA8); //--set multiplex ratio(1 to 64)
-    ssd1306_write_command(0x3F); //
-    ssd1306_write_command(
-        0xA4); //0xa4,Output follows RAM content;0xa5,Output ignores RAM content
-    ssd1306_write_command(0xD3); //-set display offset
+    ssd1306_write_command(OLED_CMD_SET_SEGMENT_REMAP);
+    ssd1306_write_command(OLED_CMD_DISPLAY_NORMAL);
+    ssd1306_write_command(OLED_CMD_SET_MUX_RATIO);
+    ssd1306_write_command(0x3F);
+    ssd1306_write_command(OLED_CMD_DISPLAY_RAM);
+    ssd1306_write_command(OLED_CMD_SET_DISPLAY_OFFSET);
     ssd1306_write_command(0x00); //-not offset
-    ssd1306_write_command(
-        0xD5); //--set display clock divide ratio/oscillator frequency
+    ssd1306_write_command(OLED_CMD_SET_DISPLAY_CLK_DIV);
     ssd1306_write_command(0xF0); //--set divide ratio
-    ssd1306_write_command(0xD9); //--set pre-charge period
-    ssd1306_write_command(0x22); //
-    ssd1306_write_command(0xDA); //--set com pins hardware configuration
-    ssd1306_write_command(0x12);
-    ssd1306_write_command(0xDB); //--set vcomh
-    ssd1306_write_command(0x20); //0x20,0.77xVcc
-    ssd1306_write_command(0x8D); //--set DC-DC enable
-    ssd1306_write_command(0x14); //
-    ssd1306_write_command(0xAF); //--turn on SSD1306 panel
+    ssd1306_write_command(OLED_CMD_SET_PRECHARGE);
+    ssd1306_write_command(0x22);
+    ssd1306_write_command(OLED_CMD_SET_COM_PIN_MAP);
+    ssd1306_write_command(OLED_CMD_SET_COM_PIN_RESET);
+    ssd1306_write_command(OLED_CMD_SET_VCOMH_DESELCT);
+    ssd1306_write_command(OLED_CMD_SET_VCOMH_0V77);
+    ssd1306_write_command(OLED_CMD_SET_CHARGE_PUMP);
+    ssd1306_write_command(OLED_CMD_SET_CHARGE_PUMP_ENABLE);
+    ssd1306_write_command(OLED_CMD_DISPLAY_ON);
+    ssd1306_write_end();
 
     ssd1306_clear();
 

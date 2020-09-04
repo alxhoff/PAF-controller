@@ -57,15 +57,18 @@
 #define OLED_CMD_SET_COM_SCAN_MODE      0xC8
 #define OLED_CMD_SET_DISPLAY_OFFSET     0xD3    // follow with 0x00
 #define OLED_CMD_SET_COM_PIN_MAP        0xDA    // follow with 0x12
+#define OLED_CMD_SET_COM_PIN_RESET      0x12
 #define OLED_CMD_NOP                    0xE3    // NOP
 
 // Timing and Driving Scheme (pg.32)
 #define OLED_CMD_SET_DISPLAY_CLK_DIV    0xD5    // follow with 0x80
 #define OLED_CMD_SET_PRECHARGE          0xD9    // follow with 0xF1
 #define OLED_CMD_SET_VCOMH_DESELCT      0xDB    // follow with 0x30
+#define OLED_CMD_SET_VCOMH_0V77         0x20
 
 // Charge Pump (pg.62)
 #define OLED_CMD_SET_CHARGE_PUMP        0x8D    // follow with 0x14
+#define OLED_CMD_SET_CHARGE_PUMP_ENABLE 0x14
 
 signed char ssd1306_update_screen(void);
 void ssd1306_refresh(char **buf, unsigned char cursor_on, int cursor_x, int cursor_y);
