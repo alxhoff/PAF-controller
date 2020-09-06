@@ -7,6 +7,8 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "esp_log.h"
+
 #include "paf_config.h"
 
 #include "screen.h"
@@ -17,7 +19,6 @@
 #include "freertos/semphr.h"
 #include "freertos/timers.h"
 #endif
-
 
 typedef struct screen_device {
     int rows;
@@ -42,6 +43,8 @@ typedef struct screen_device {
     void (*draw_text)(char **, unsigned char, int, int);
     void (*clear_screen)(void);
     signed char (*update_screen)(void);
+    unsigned char (*get_cols)(void);
+    unsigned char (*get_rows)(void);
 #ifdef SCREEN_USE_CURSOR
     void (*mv_cursor_left)(void);
     void (*mv_cursor_right)(void);
@@ -52,6 +55,8 @@ screen_device_t screen_dev = { .cursor_period = SCREEN_CURSOR_PERIOD,
                                .draw_text = &SCREEN_DRAW,
                                .clear_screen = &SCREEN_CLEAR,
                                .update_screen = &SCREEN_REFRESH,
+                               .get_cols = &SCREEN_GET_COLS,
+                               .get_rows = &SCREEN_GET_ROWS,
 #ifdef SCREEN_USE_CURSOR
                                .mv_cursor_left = &SCREEN_MV_CUR_LEFT,
                                .mv_cursor_right = &SCREEN_MV_CUR_RIGHT
@@ -97,9 +102,12 @@ int screen_get_cursor_y(void)
 
 void screen_move_cursor_right(void)
 {
-    if (screen_dev.framebuffer && screen_dev.cursor_location_y < screen_dev.row_count)
+    if (screen_dev.framebuffer &&
+        screen_dev.cursor_location_y < screen_dev.row_count)
         if (screen_dev.framebuffer[screen_dev.cursor_location_y]) {
-            int max_len = strlen(screen_dev.framebuffer[screen_dev.cursor_location_y]);
+            int max_len =
+                strlen(screen_dev.framebuffer
+                       [screen_dev.cursor_location_y]);
             if (screen_dev.cursor_location_x >= max_len) {
                 screen_dev.cursor_location_x = max_len - 1;
             }
@@ -111,8 +119,7 @@ void screen_move_cursor_right(void)
 
 char *screen_get_framebuffer_line(unsigned char line)
 {
-    unsigned char rows = SCREEN_GET_ROWS;
-    if (line < rows) {
+    if (line < screen_dev.rows) {
         return screen_dev.framebuffer[line];
     }
     return NULL;
@@ -134,44 +141,49 @@ void screen_refresh(void *args)
     while (1) {
         xSemaphoreTake(screen_dev.framebuffer_lock, portMAX_DELAY);
         xSemaphoreTake(screen_dev.cursor_lock, portMAX_DELAY);
-#endif
+#endif //FREERTOS
 
-        screen_dev.clear_screen();
+        (screen_dev.clear_screen)();
 
 #ifdef SCREEN_USE_CURSOR
-
-        screen_dev.draw_text(screen_dev.framebuffer, screen_dev.cursor_on,
-                             screen_dev.cursor_location_x, screen_dev.cursor_location_y);
-
+        ESP_LOGI(__func__, "Refreshing screen");
+        screen_dev.draw_text(screen_dev.framebuffer,
+                             screen_dev.cursor_on,
+                             screen_dev.cursor_location_x,
+                             screen_dev.cursor_location_y);
+        ESP_LOGI(__func__, "Refreshing screen done");
 #else
         screen_dev.draw_text(screen_dev.framebuffer, 0, 0, 0);
-#endif
-        screen_dev.update_screen();
-#ifdef FREERTOS
-        xSemaphoreGive(screen_dev.cursor_lock);
-        xSemaphoreGive(screen_dev.framebuffer_lock);
-
-        xPeriod = SCREEN_PERIOD - (xLastWakeTime - xTaskGetTickCount());
+#endif //SCREEN_USE_CURSOR
+        /**         screen_dev.update_screen(); */
+        /** #ifdef FREERTOS */
+        /**         xSemaphoreGive(screen_dev.cursor_lock); */
+        /**         xSemaphoreGive(screen_dev.framebuffer_lock); */
+        /**  */
+        /**         xPeriod = SCREEN_PERIOD - (xLastWakeTime - xTaskGetTickCount()); */
         vTaskDelayUntil(&xLastWakeTime, xPeriod);
     }
-#endif
+    /** #endif //SCREEN_USE_CURSOR */
 }
 
 signed char screen_add_line(char *line)
 {
-    screen_dev.framebuffer = realloc(screen_dev.framebuffer, sizeof(char) * (screen_dev.row_count + 1));
+    screen_dev.framebuffer =
+        realloc(screen_dev.framebuffer,
+                sizeof(char) * (screen_dev.row_count + 1));
 
     if (!screen_dev.framebuffer) {
         return -1;
     }
 
-    screen_dev.framebuffer[screen_dev.row_count] = malloc(sizeof(char) * (strlen(line) + 1));
+    screen_dev.framebuffer[screen_dev.row_count] =
+        malloc(sizeof(char) * (strlen(line) + 1));
 
     if (!screen_dev.framebuffer[screen_dev.row_count]) {
         return -1;
     }
 
-    strcpy(screen_dev.framebuffer[screen_dev.row_count], line); \
+    strcpy(screen_dev.framebuffer[screen_dev.row_count], line);
     screen_dev.row_count++;
 
     return 0;
@@ -180,7 +192,8 @@ signed char screen_add_line(char *line)
 signed char screen_add_line_at_index(unsigned char index, char *line)
 {
     if (index + 1 >= screen_dev.row_count) {
-        screen_dev.framebuffer = realloc(screen_dev.framebuffer, sizeof(char *) * (index + 1));
+        screen_dev.framebuffer = realloc(screen_dev.framebuffer,
+                                         sizeof(char *) * (index + 1));
         if (!screen_dev.framebuffer) {
             return -1;
         }
@@ -190,7 +203,9 @@ signed char screen_add_line_at_index(unsigned char index, char *line)
         screen_dev.row_count = index + 1;
     }
 
-    screen_dev.framebuffer[index] = realloc(screen_dev.framebuffer[index], sizeof(char) * (strlen(line) + 1));
+    screen_dev.framebuffer[index] =
+        realloc(screen_dev.framebuffer[index],
+                sizeof(char) * (strlen(line) + 1));
 
     if (!screen_dev.framebuffer[index]) {
         return -1;
@@ -203,29 +218,47 @@ signed char screen_add_line_at_index(unsigned char index, char *line)
 
 signed char screen_init(void)
 {
-
-    screen_dev.rows = SCREEN_GET_ROWS;
-    screen_dev.cols = SCREEN_GET_COLS;
+    int err;
+    ESP_LOGI(__func__, "Starting screen init");
+    err = SCREEN_INIT();
+    if (err) {
+        ESP_LOGI(__func__, "Screen dev init failed");
+        return -1;
+    }
+    else {
+        ESP_LOGI(__func__, "Screen dev initd");
+    }
+    screen_dev.cols = (screen_dev.get_cols)();
+    screen_dev.rows = (screen_dev.get_rows)();
+    ESP_LOGI(__func__, "Screen has %d cols and %d rows", screen_dev.rows,
+             screen_dev.cols);
 
 #ifdef FREERTOS
-    screen_dev.cursor_timer = xTimerCreate("Cursor Timer",
-                                           screen_dev.cursor_period, 1, NULL, screen_cursor_callback);
+    screen_dev.cursor_timer =
+        xTimerCreate("Cursor Timer", screen_dev.cursor_period, 1, NULL,
+                     screen_cursor_callback);
     if (!screen_dev.cursor_timer) {
         goto timer_error;
     }
+    ESP_LOGI(__func__, "    -> Cursor timer started");
 
     screen_dev.cursor_lock = xSemaphoreCreateMutex();
     if (!screen_dev.cursor_lock) {
         goto c_lock_error;
     }
+    ESP_LOGI(__func__, "    -> Screen locked");
 
     screen_dev.framebuffer_lock = xSemaphoreCreateMutex();
     if (!screen_dev.framebuffer_lock) {
         goto f_lock_error;
     }
+    ESP_LOGI(__func__, "     -> Framebuffer locked");
 
     xTimerStart(screen_dev.cursor_timer, 0);
-    xTaskCreate(screen_refresh, "screen", PAF_DEF_SCREEN_STACK, NULL, PAF_DEF_SCREEN_PRIORITY, screen_dev.refresh_task);
+    ESP_LOGI(__func__, "     -> Cursor timer started");
+    xTaskCreate(screen_refresh, "screen", PAF_DEF_SCREEN_STACK, NULL,
+                PAF_DEF_SCREEN_PRIORITY, &screen_dev.refresh_task);
+    ESP_LOGI(__func__, "     -> Screen task started");
 #endif
     return 0;
 
