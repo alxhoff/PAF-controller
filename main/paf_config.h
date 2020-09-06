@@ -1,6 +1,7 @@
 #ifndef __PAF_CONFIG_H__
 #define __PAF_CONFIG_H__
 
+#define FREERTOS 1
 #define PAF_DEF_LED_GPIO (2)
 #define PAF_DEF_LED_DC (4000)
 #define PAF_DEF_LED_FREQ (5000)
@@ -31,5 +32,7 @@
 #define PAF_DEF_OLED_SDA_PIN (21)
 #define PAF_DEF_OLED_SCL_PIN (22)
 #define PAF_DEF_I2C_NUM I2C_NUM_0
+#define PAF_DEF_SCREEN_PRIORITY 3
+#define PAF_DEF_SCREEN_STACK 4096
 
 #endif // __PAF_CONFIG_H__

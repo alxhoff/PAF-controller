@@ -9,5 +9,6 @@ idf_component_register(SRCS
     "paf_wifi.c"
     "esp32_ssd1306.c"
     "fonts.c"
+    "screen.c"
     INCLUDE_DIRS ${PROJECT_SOURCE_DIR})
 
