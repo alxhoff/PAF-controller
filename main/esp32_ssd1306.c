@@ -81,7 +81,6 @@ ssd1306_device_t ssd1306_dev = { 0 };
 
 unsigned char ssd1306_get_cols(void)
 {
-    ESP_LOGI(__func__, "%uc", SSD1306_WIDTH_CHARS);
     return SSD1306_WIDTH_CHARS;
 }
 
@@ -305,28 +304,20 @@ void ssd1306_write_string(char *str)
     }
 }
 
-void ssd1306_draw_framebuffer(char **buf, int cursor_x)
+void ssd1306_draw_framebuffer(char **buf, int cursor_x, unsigned cur_row, unsigned rows)
 {
     int offset = 0;
+    if (buf) {
+        if (cursor_x >= SSD1306_WIDTH_CHARS) {
+            offset += cursor_x - SSD1306_WIDTH_CHARS;
+        }
 
-    if (cursor_x >= SSD1306_WIDTH_CHARS) {
-        offset += cursor_x - SSD1306_WIDTH_CHARS;
+        for (int i = cur_row; i < rows; i++) {
+            if (buf[i]) {
+                ssd1306_write_string(buf[i] + offset);
+            }
+        }
     }
-    
-    if (buf == NULL )
-    {
-        ESP_LOGI(__func__, "Buf = null pointer");
-    }
-    else
-    {
-        for (unsigned char i = 0; i < SSD1306_HEIGHT_CHARS; i++) {
-        ssd1306_set_draw_cursor(SSD1306_X_OFFSET,
-                                SSD1306_Y_OFFSET +
-                                i * SSD1306_CHAR_HEIGHT);
-        ssd1306_write_string(buf[i] + offset);
-    }
-    }
-
 }
 
 void ssd1306_draw_cursor(unsigned char state, int x, int y)
@@ -341,10 +332,11 @@ void ssd1306_draw_cursor(unsigned char state, int x, int y)
     }
 }
 
-void ssd1306_refresh(char **buf, unsigned char cursor_on, int cursor_x,
-                     int cursor_y)
+void ssd1306_refresh(char **buf, unsigned char cursor_on, int cursor_x, int cursor_y, unsigned cur_row, unsigned rows)
 {
-    ssd1306_draw_framebuffer(buf, cursor_x);
+    if (!rows) {
+        ssd1306_draw_framebuffer(buf, cursor_x, cur_row, rows);
+    }
     ssd1306_draw_cursor(cursor_on, cursor_x, cursor_y);
 }
 

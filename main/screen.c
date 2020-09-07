@@ -24,6 +24,10 @@ typedef struct screen_device {
     int rows;
     int cols;
 
+    char **framebuffer;
+    int fb_row_count;
+    unsigned int cur_fb_row;
+
 #ifdef FREERTOS
     SemaphoreHandle_t framebuffer_lock;
     SemaphoreHandle_t cursor_lock;
@@ -31,16 +35,12 @@ typedef struct screen_device {
     TimerHandle_t cursor_timer;
 #endif
 
-    char **framebuffer;
-
-    int row_count;
-
     unsigned char cursor_on;
     int cursor_period;
     int cursor_location_x;
     int cursor_location_y;
 
-    void (*draw_text)(char **, unsigned char, int, int);
+    void (*draw_text)(char **, unsigned char, int, int, unsigned int, unsigned int);
     void (*clear_screen)(void);
     signed char (*update_screen)(void);
     unsigned char (*get_cols)(void);
@@ -103,7 +103,7 @@ int screen_get_cursor_y(void)
 void screen_move_cursor_right(void)
 {
     if (screen_dev.framebuffer &&
-        screen_dev.cursor_location_y < screen_dev.row_count)
+        screen_dev.cursor_location_y < screen_dev.fb_row_count)
         if (screen_dev.framebuffer[screen_dev.cursor_location_y]) {
             int max_len =
                 strlen(screen_dev.framebuffer
@@ -146,61 +146,65 @@ void screen_refresh(void *args)
         (screen_dev.clear_screen)();
 
 #ifdef SCREEN_USE_CURSOR
-        ESP_LOGI(__func__, "Refreshing screen");
         screen_dev.draw_text(screen_dev.framebuffer,
                              screen_dev.cursor_on,
                              screen_dev.cursor_location_x,
-                             screen_dev.cursor_location_y);
-        ESP_LOGI(__func__, "Refreshing screen done");
+                             screen_dev.cursor_location_y,
+                             screen_dev.cur_fb_row,
+                             screen_dev.rows
+                            );
 #else
-        screen_dev.draw_text(screen_dev.framebuffer, 0, 0, 0);
+        screen_dev.draw_text(screen_dev.framebuffer, 0, 0, 0,
+                             screen_dev.cur_fb_row,
+                             screen_dev.rows
+                            );
 #endif //SCREEN_USE_CURSOR
-        /**         screen_dev.update_screen(); */
-        /** #ifdef FREERTOS */
-        /**         xSemaphoreGive(screen_dev.cursor_lock); */
-        /**         xSemaphoreGive(screen_dev.framebuffer_lock); */
-        /**  */
-        /**         xPeriod = SCREEN_PERIOD - (xLastWakeTime - xTaskGetTickCount()); */
+        screen_dev.update_screen();
+#ifdef FREERTOS
+        xSemaphoreGive(screen_dev.cursor_lock);
+        xSemaphoreGive(screen_dev.framebuffer_lock);
+
+        xPeriod = SCREEN_PERIOD - (xLastWakeTime - xTaskGetTickCount());
         vTaskDelayUntil(&xLastWakeTime, xPeriod);
     }
-    /** #endif //SCREEN_USE_CURSOR */
+#endif //SCREEN_USE_CURSOR
 }
 
 signed char screen_add_line(char *line)
 {
     screen_dev.framebuffer =
         realloc(screen_dev.framebuffer,
-                sizeof(char) * (screen_dev.row_count + 1));
+                sizeof(char) * (screen_dev.fb_row_count + 1));
 
     if (!screen_dev.framebuffer) {
         return -1;
     }
 
-    screen_dev.framebuffer[screen_dev.row_count] =
+    screen_dev.framebuffer[screen_dev.fb_row_count] =
         malloc(sizeof(char) * (strlen(line) + 1));
 
-    if (!screen_dev.framebuffer[screen_dev.row_count]) {
+    if (!screen_dev.framebuffer[screen_dev.fb_row_count]) {
         return -1;
     }
 
-    strcpy(screen_dev.framebuffer[screen_dev.row_count], line);
-    screen_dev.row_count++;
+    strcpy(screen_dev.framebuffer[screen_dev.fb_row_count], line);
+    screen_dev.fb_row_count++;
 
     return 0;
 }
 
 signed char screen_add_line_at_index(unsigned char index, char *line)
 {
-    if (index + 1 >= screen_dev.row_count) {
+    if (index + 1 >= screen_dev.fb_row_count) {
         screen_dev.framebuffer = realloc(screen_dev.framebuffer,
                                          sizeof(char *) * (index + 1));
         if (!screen_dev.framebuffer) {
             return -1;
         }
-        for (int i = screen_dev.row_count; i <= index; i++) {
+        for (int i = screen_dev.fb_row_count; i <= index; i++) {
             screen_dev.framebuffer[i] = NULL;
         }
-        screen_dev.row_count = index + 1;
+        screen_dev.fb_row_count = index + 1;
     }
 
     screen_dev.framebuffer[index] =
