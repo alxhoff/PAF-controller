@@ -312,13 +312,21 @@ void ssd1306_draw_framebuffer(char **buf, int cursor_x)
     if (cursor_x >= SSD1306_WIDTH_CHARS) {
         offset += cursor_x - SSD1306_WIDTH_CHARS;
     }
-
-    for (unsigned char i = 0; i < SSD1306_HEIGHT_CHARS; i++) {
+    
+    if (buf == NULL )
+    {
+        ESP_LOGI(__func__, "Buf = null pointer");
+    }
+    else
+    {
+        for (unsigned char i = 0; i < SSD1306_HEIGHT_CHARS; i++) {
         ssd1306_set_draw_cursor(SSD1306_X_OFFSET,
                                 SSD1306_Y_OFFSET +
                                 i * SSD1306_CHAR_HEIGHT);
         ssd1306_write_string(buf[i] + offset);
     }
+    }
+
 }
 
 void ssd1306_draw_cursor(unsigned char state, int x, int y)
