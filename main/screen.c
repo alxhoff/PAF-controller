@@ -40,7 +40,8 @@ typedef struct screen_device {
     int cursor_location_x;
     int cursor_location_y;
 
-    void (*draw_text)(char **, unsigned char, int, int, unsigned int, unsigned int);
+    void (*draw_text)(char **, unsigned char, int, int, unsigned int,
+                      unsigned int);
     void (*clear_screen)(void);
     signed char (*update_screen)(void);
     unsigned char (*get_cols)(void);
@@ -150,14 +151,10 @@ void screen_refresh(void *args)
                              screen_dev.cursor_on,
                              screen_dev.cursor_location_x,
                              screen_dev.cursor_location_y,
-                             screen_dev.cur_fb_row,
-                             screen_dev.rows
-                            );
+                             screen_dev.cur_fb_row, screen_dev.rows);
 #else
         screen_dev.draw_text(screen_dev.framebuffer, 0, 0, 0,
-                             screen_dev.cur_fb_row,
-                             screen_dev.rows
-                            );
+                             screen_dev.cur_fb_row, screen_dev.rows);
 #endif //SCREEN_USE_CURSOR
         screen_dev.update_screen();
 #ifdef FREERTOS
@@ -170,27 +167,49 @@ void screen_refresh(void *args)
 #endif //SCREEN_USE_CURSOR
 }
 
+//Adds a line to the framebuffer and set's it's string contents
 signed char screen_add_line(char *line)
 {
+    if (!line) {
+        return -1;
+    }
+
     screen_dev.framebuffer =
         realloc(screen_dev.framebuffer,
                 sizeof(char) * (screen_dev.fb_row_count + 1));
 
     if (!screen_dev.framebuffer) {
-        return -1;
+        goto err_fb_realloc;
     }
 
-    screen_dev.framebuffer[screen_dev.fb_row_count] =
-        malloc(sizeof(char) * (strlen(line) + 1));
-
+    screen_dev.framebuffer[screen_dev.fb_row_count] = strdup(line);
     if (!screen_dev.framebuffer[screen_dev.fb_row_count]) {
-        return -1;
+        goto err_line_alloc;
     }
 
-    strcpy(screen_dev.framebuffer[screen_dev.fb_row_count], line);
     screen_dev.fb_row_count++;
 
     return 0;
+
+err_line_alloc:
+    if (screen_dev.fb_row_count)
+        screen_dev.framebuffer =
+            realloc(screen_dev.framebuffer,
+                    sizeof(char) * (screen_dev.fb_row_count));
+    else {
+        free(screen_dev.framebuffer);
+    }
+err_fb_realloc:
+    return -1;
+}
+
+void screen_log_fb(void)
+{
+    for (int i = 0; i < screen_dev.fb_row_count; i++)
+        ESP_LOGI(__func__, "#%d: '%s'", i,
+                 (screen_dev.framebuffer[i]) ?
+                 screen_dev.framebuffer[i] :
+                 "NULL");
 }
 
 signed char screen_add_line_at_index(unsigned char index, char *line)

@@ -43,4 +43,8 @@ void app_main(void)
     paf_led_init(PAF_DEF_LED_MODE);
     screen_init();
     paf_console_init();
+
+    screen_add_line("Hello world");
+    screen_add_line_at_index(1, "Init'd");
+    screen_log_fb();
 }

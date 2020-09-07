@@ -72,6 +72,12 @@ if(ENABLE_ASTYLE)
     endif()
 endif()
 
+add_custom_target(
+    commit
+    COMMAND echo COMMAND git diff --check HEAD^
+    COMMENT "Running git check"
+)
+
 IF(NOT ESP_OPENOCD)
     FIND_PROGRAM(ESP_OPENOCD openocd-esp32)
     IF(ESP_OPENOCD STREQUAL "ESP_OPENOCD-NOTFOUND")
