@@ -60,5 +60,8 @@ void app_main(void)
     screen_replace_line_at_index(1, "also replaced");
     screen_log_fb();
     screen_replace_line_at_index(4, "fourth line replaced");
+    screen_replace_line_at_index(8, "fourth line replaced");
+    screen_log_fb();
+    screen_write_string_at_index_and_pos(10, 0, "Hello world");
     screen_log_fb();
 }

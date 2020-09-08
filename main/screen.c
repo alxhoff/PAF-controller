@@ -170,8 +170,8 @@ signed char screen_add_line_at_index(unsigned char index, char *line)
     }
 
     if (index + 1 >= screen_dev.fb_row_count) {
-        screen_dev.framebuffer = reallocarray(screen_dev.framebuffer,
-                                              (index + 1), sizeof(char *));
+        screen_dev.framebuffer = reallocarray(
+                                     screen_dev.framebuffer, (index + 1), sizeof(char *));
         if (!screen_dev.framebuffer) {
             goto err_fb_realloc;
         }
@@ -278,8 +278,10 @@ signed char screen_delete_line(void)
             free(screen_dev
                  .framebuffer[screen_dev.fb_row_count - 1]);
             screen_dev.fb_row_count--;
-            while (screen_dev.framebuffer[screen_dev.fb_row_count - 1] == NULL) {
-                free(screen_dev.framebuffer[screen_dev.fb_row_count - 1]);
+            while (screen_dev.framebuffer[screen_dev.fb_row_count -
+                                                                  1] == NULL) {
+                free(screen_dev.framebuffer
+                     [screen_dev.fb_row_count - 1]);
                 screen_dev.fb_row_count--;
             }
             screen_dev.framebuffer =
@@ -309,12 +311,15 @@ signed char screen_delete_line_at_index(unsigned char index)
     if (screen_dev.framebuffer)
         if (index <= screen_dev.fb_row_count - 1) {
             free(screen_dev.framebuffer[index]);
-            ESP_LOGI(__func__, "Index: %d, len: %d", index, screen_dev.fb_row_count);
+            ESP_LOGI(__func__, "Index: %d, len: %d", index,
+                     screen_dev.fb_row_count);
             if ((screen_dev.fb_row_count - 1) > index)
                 for (int i = index;
                      i < (screen_dev.fb_row_count - 1); i++) {
-                    ESP_LOGI(__func__, "Moving %d -> %d", i + 1, i);
-                    screen_dev.framebuffer[i] = screen_dev.framebuffer[i + 1];
+                    ESP_LOGI(__func__, "Moving %d -> %d",
+                             i + 1, i);
+                    screen_dev.framebuffer[i] =
+                        screen_dev.framebuffer[i + 1];
                 }
             screen_dev.fb_row_count--;
             screen_dev.framebuffer =
@@ -334,11 +339,33 @@ signed char screen_write_string(char *str)
     return screen_add_line_at_index(screen_dev.cursor_location_y, str);
 }
 
-signed char screen_write_string_at_pos(char *str, unsigned int pos)
+signed char screen_write_string_at_index_and_pos(unsigned char index,
+        unsigned int pos, char *str)
 {
-    //TODO
-    return 0;
+    if (!screen_dev.framebuffer || ((index + 1) > screen_dev.fb_row_count)) {
+        screen_add_line_at_index(index, "");
+        if (!screen_dev.framebuffer) {
+            return -1;
+        }
+    }
 
+    size_t str_len = strlen(str);
+    if (screen_dev.framebuffer[index]) {
+        if ((pos + str_len) != (strlen(screen_dev.framebuffer[index])))
+            screen_dev.framebuffer[index] =
+                reallocarray(screen_dev.framebuffer[index],
+                             pos + str_len, sizeof(char));
+        strcpy(screen_dev.framebuffer[index] + pos, str);
+        return 0;
+    }
+
+    return 0;
+}
+
+signed char screen_write_string_at_pos(unsigned int pos, char *str)
+{
+    return screen_write_string_at_index_and_pos(
+               screen_dev.cursor_location_y, pos, str);
 }
 
 signed char screen_init(void)

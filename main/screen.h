@@ -35,7 +35,8 @@ signed char screen_delete_line_at_index(unsigned char index);
 //A simple function that write a string to the bottom line of the screen, equivalent to calling screen_add_line_at_index with the cursor_y row as the index
 signed char screen_write_string(char *str);
 //Writes a string to the current bottom line of the screen at a certain position in the current string.
-signed char screen_write_string_at_pos(char *str, unsigned int pos);
+signed char screen_write_string_at_pos(unsigned int pos, char *str);
+signed char screen_write_string_at_index_and_pos(unsigned char index, unsigned int pos, char *str);
 
 void screen_log_fb(void);
 
