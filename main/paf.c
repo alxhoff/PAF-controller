@@ -44,7 +44,21 @@ void app_main(void)
     screen_init();
     paf_console_init();
 
-    screen_add_line("Hello world");
+    screen_add_line("Hello world1");
+    screen_add_line("Hello world2");
+    screen_add_line("Hello world3");
     screen_add_line_at_index(1, "Init'd");
+    screen_add_line_at_index(4, "Fourth");
+    screen_log_fb();
+    screen_delete_line();
+    screen_log_fb();
+    screen_delete_line_at_index(1);
+    screen_delete_line_at_index(5);
+    screen_log_fb();
+    screen_replace_line("replaced");
+    screen_log_fb();
+    screen_replace_line_at_index(1, "also replaced");
+    screen_log_fb();
+    screen_replace_line_at_index(4, "fourth line replaced");
     screen_log_fb();
 }

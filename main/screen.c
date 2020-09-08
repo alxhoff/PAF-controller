@@ -26,7 +26,6 @@ typedef struct screen_device {
 
     char **framebuffer;
     int fb_row_count;
-    unsigned int cur_fb_row;
 
 #ifdef FREERTOS
     SemaphoreHandle_t framebuffer_lock;
@@ -40,8 +39,7 @@ typedef struct screen_device {
     int cursor_location_x;
     int cursor_location_y;
 
-    void (*draw_text)(char **, unsigned char, int, int, unsigned int,
-                      unsigned int);
+    void (*draw_text)(char **, unsigned char, int, int, unsigned int);
     void (*clear_screen)(void);
     signed char (*update_screen)(void);
     unsigned char (*get_cols)(void);
@@ -82,15 +80,6 @@ void screen_move_cursor_left(void)
     screen_dev.cursor_location_x--;
 }
 
-char **screen_get_buffer(void)
-{
-    if (!screen_dev.framebuffer) {
-        return NULL;
-    }
-
-    return screen_dev.framebuffer;
-}
-
 int screen_get_cursor_x(void)
 {
     return screen_dev.cursor_location_x;
@@ -103,22 +92,30 @@ int screen_get_cursor_y(void)
 
 void screen_move_cursor_right(void)
 {
-    if (screen_dev.framebuffer &&
-        screen_dev.cursor_location_y < screen_dev.fb_row_count)
-        if (screen_dev.framebuffer[screen_dev.cursor_location_y]) {
-            int max_len =
+    if (screen_dev.framebuffer)
+        if (screen_dev.framebuffer[screen_dev.cursor_location_y])
+            if (screen_dev.cursor_location_x <
                 strlen(screen_dev.framebuffer
-                       [screen_dev.cursor_location_y]);
-            if (screen_dev.cursor_location_x >= max_len) {
-                screen_dev.cursor_location_x = max_len - 1;
-            }
-            else {
+                       [screen_dev.cursor_location_y])) {
                 screen_dev.cursor_location_x++;
             }
-        }
 }
 
-char *screen_get_framebuffer_line(unsigned char line)
+void screen_move_cursor_up(void)
+{
+    if (screen_dev.cursor_location_y < screen_dev.fb_row_count) {
+        screen_dev.cursor_location_y++;
+    }
+}
+
+void screen_mode_cursor_down(void)
+{
+    if (screen_dev.cursor_location_y > 0) {
+        screen_dev.cursor_location_y--;
+    }
+}
+
+static char *screen_get_framebuffer_line(unsigned char line)
 {
     if (line < screen_dev.rows) {
         return screen_dev.framebuffer[line];
@@ -126,14 +123,14 @@ char *screen_get_framebuffer_line(unsigned char line)
     return NULL;
 }
 
-void screen_clear(void)
+static void screen_clear(void)
 {
     for (unsigned char i = 0; i < screen_dev.rows; i++)
         memset(screen_dev.framebuffer[i], 0,
                sizeof(char) * (screen_dev.cols + 1));
 }
 
-void screen_refresh(void *args)
+static void screen_refresh(void *args)
 {
 #ifdef FREERTOS
     TickType_t xLastWakeTime = xTaskGetTickCount();
@@ -151,10 +148,9 @@ void screen_refresh(void *args)
                              screen_dev.cursor_on,
                              screen_dev.cursor_location_x,
                              screen_dev.cursor_location_y,
-                             screen_dev.cur_fb_row, screen_dev.rows);
+                             screen_dev.rows);
 #else
-        screen_dev.draw_text(screen_dev.framebuffer, 0, 0, 0,
-                             screen_dev.cur_fb_row, screen_dev.rows);
+        screen_dev.draw_text(screen_dev.framebuffer, 0, 0, 0, screen_dev.rows);
 #endif //SCREEN_USE_CURSOR
         screen_dev.update_screen();
 #ifdef FREERTOS
@@ -167,6 +163,42 @@ void screen_refresh(void *args)
 #endif //SCREEN_USE_CURSOR
 }
 
+signed char screen_add_line_at_index(unsigned char index, char *line)
+{
+    if (!line) {
+        return -1;
+    }
+
+    if (index + 1 >= screen_dev.fb_row_count) {
+        screen_dev.framebuffer = reallocarray(screen_dev.framebuffer,
+                                              (index + 1), sizeof(char *));
+        if (!screen_dev.framebuffer) {
+            goto err_fb_realloc;
+        }
+        for (int i = screen_dev.fb_row_count; i <= index; i++) {
+            screen_dev.framebuffer[i] = NULL;
+        }
+        screen_dev.fb_row_count = index + 1;
+    }
+
+    screen_dev.framebuffer[index] = strdup(line);
+    if (!screen_dev.framebuffer[index]) {
+        goto err_line_alloc;
+    }
+
+    return 0;
+err_line_alloc:
+    if (screen_dev.fb_row_count)
+        screen_dev.framebuffer =
+            reallocarray(screen_dev.framebuffer,
+                         (screen_dev.fb_row_count), sizeof(char *));
+    else {
+        free(screen_dev.framebuffer);
+    }
+err_fb_realloc:
+    return -1;
+}
+
 //Adds a line to the framebuffer and set's it's string contents
 signed char screen_add_line(char *line)
 {
@@ -175,8 +207,8 @@ signed char screen_add_line(char *line)
     }
 
     screen_dev.framebuffer =
-        realloc(screen_dev.framebuffer,
-                sizeof(char) * (screen_dev.fb_row_count + 1));
+        reallocarray(screen_dev.framebuffer,
+                     (screen_dev.fb_row_count + 1), sizeof(char *));
 
     if (!screen_dev.framebuffer) {
         goto err_fb_realloc;
@@ -194,8 +226,8 @@ signed char screen_add_line(char *line)
 err_line_alloc:
     if (screen_dev.fb_row_count)
         screen_dev.framebuffer =
-            realloc(screen_dev.framebuffer,
-                    sizeof(char) * (screen_dev.fb_row_count));
+            reallocarray(screen_dev.framebuffer,
+                         (screen_dev.fb_row_count), sizeof(char *));
     else {
         free(screen_dev.framebuffer);
     }
@@ -203,8 +235,35 @@ err_fb_realloc:
     return -1;
 }
 
+signed char screen_replace_line(char *line)
+{
+    return screen_replace_line_at_index(screen_dev.cursor_location_y, line);
+}
+
+signed char screen_replace_line_at_index(signed char index, char *line)
+{
+    if (screen_dev.framebuffer) {
+        if (index > (screen_dev.fb_row_count - 1)) {
+            return screen_add_line_at_index(index, line);
+        }
+
+        if (screen_dev.framebuffer[index]) {
+            free(screen_dev.framebuffer[index]);
+        }
+        screen_dev.framebuffer[index] = strdup(line);
+        if (!screen_dev.framebuffer[index]) {
+            return -1;
+        }
+        return 0;
+    }
+    else {
+        return screen_add_line_at_index(index, line);
+    }
+}
+
 void screen_log_fb(void)
 {
+    ESP_LOGI(__func__, "#### %d lines ####", screen_dev.fb_row_count);
     for (int i = 0; i < screen_dev.fb_row_count; i++)
         ESP_LOGI(__func__, "#%d: '%s'", i,
                  (screen_dev.framebuffer[i]) ?
@@ -212,31 +271,74 @@ void screen_log_fb(void)
                  "NULL");
 }
 
-signed char screen_add_line_at_index(unsigned char index, char *line)
+signed char screen_delete_line(void)
 {
-    if (index + 1 >= screen_dev.fb_row_count) {
-        screen_dev.framebuffer = realloc(screen_dev.framebuffer,
-                                         sizeof(char *) * (index + 1));
-        if (!screen_dev.framebuffer) {
-            return -1;
+    if (screen_dev.framebuffer) {
+        if (screen_dev.fb_row_count) {
+            free(screen_dev
+                 .framebuffer[screen_dev.fb_row_count - 1]);
+            screen_dev.fb_row_count--;
+            while (screen_dev.framebuffer[screen_dev.fb_row_count - 1] == NULL) {
+                free(screen_dev.framebuffer[screen_dev.fb_row_count - 1]);
+                screen_dev.fb_row_count--;
+            }
+            screen_dev.framebuffer =
+                reallocarray(screen_dev.framebuffer,
+                             screen_dev.fb_row_count,
+                             sizeof(char *));
+            if (!screen_dev.fb_row_count) {
+                screen_dev.cursor_location_y = 0;
+                free(screen_dev.framebuffer);
+                return 0;
+            }
+            if (screen_dev.fb_row_count ==
+                screen_dev.cursor_location_y) {
+                screen_dev.cursor_location_y--;
+            }
         }
-        for (int i = screen_dev.fb_row_count; i <= index; i++) {
-            screen_dev.framebuffer[i] = NULL;
+        else {
+            free(screen_dev.framebuffer);
         }
-        screen_dev.fb_row_count = index + 1;
     }
-
-    screen_dev.framebuffer[index] =
-        realloc(screen_dev.framebuffer[index],
-                sizeof(char) * (strlen(line) + 1));
-
-    if (!screen_dev.framebuffer[index]) {
-        return -1;
-    }
-
-    strcpy(screen_dev.framebuffer[index], line); //CRASHES HERE
 
     return 0;
+}
+
+signed char screen_delete_line_at_index(unsigned char index)
+{
+    if (screen_dev.framebuffer)
+        if (index <= screen_dev.fb_row_count - 1) {
+            free(screen_dev.framebuffer[index]);
+            ESP_LOGI(__func__, "Index: %d, len: %d", index, screen_dev.fb_row_count);
+            if ((screen_dev.fb_row_count - 1) > index)
+                for (int i = index;
+                     i < (screen_dev.fb_row_count - 1); i++) {
+                    ESP_LOGI(__func__, "Moving %d -> %d", i + 1, i);
+                    screen_dev.framebuffer[i] = screen_dev.framebuffer[i + 1];
+                }
+            screen_dev.fb_row_count--;
+            screen_dev.framebuffer =
+                reallocarray(screen_dev.framebuffer,
+                             screen_dev.fb_row_count,
+                             sizeof(char *));
+            if (screen_dev.fb_row_count ==
+                screen_dev.cursor_location_y) {
+                screen_dev.cursor_location_y--;
+            }
+        }
+    return 0;
+}
+
+signed char screen_write_string(char *str)
+{
+    return screen_add_line_at_index(screen_dev.cursor_location_y, str);
+}
+
+signed char screen_write_string_at_pos(char *str, unsigned int pos)
+{
+    //TODO
+    return 0;
+
 }
 
 signed char screen_init(void)
@@ -275,13 +377,13 @@ signed char screen_init(void)
     if (!screen_dev.framebuffer_lock) {
         goto f_lock_error;
     }
-    ESP_LOGI(__func__, "     -> Framebuffer locked");
+    ESP_LOGI(__func__, "    -> Framebuffer locked");
 
     xTimerStart(screen_dev.cursor_timer, 0);
-    ESP_LOGI(__func__, "     -> Cursor timer started");
+    ESP_LOGI(__func__, "    -> Cursor timer started");
     xTaskCreate(screen_refresh, "screen", PAF_DEF_SCREEN_STACK, NULL,
                 PAF_DEF_SCREEN_PRIORITY, &screen_dev.refresh_task);
-    ESP_LOGI(__func__, "     -> Screen task started");
+    ESP_LOGI(__func__, "    -> Screen task started");
 #endif
     return 0;
 
