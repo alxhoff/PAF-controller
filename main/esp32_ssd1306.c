@@ -304,7 +304,7 @@ void ssd1306_write_string(char *str)
     }
 }
 
-void ssd1306_draw_framebuffer(char **buf, int cursor_x, unsigned cur_row, unsigned rows)
+void ssd1306_draw_framebuffer(char **buf, int cursor_x, unsigned cursor_y, unsigned rows)
 {
     int offset = 0;
     if (buf) {
@@ -312,7 +312,7 @@ void ssd1306_draw_framebuffer(char **buf, int cursor_x, unsigned cur_row, unsign
             offset += cursor_x - SSD1306_WIDTH_CHARS;
         }
 
-        for (int i = cur_row; i < rows; i++) {
+        for (int i = cursor_y; i < (cursor_y + rows); i++) {
             if (buf[i]) {
                 ssd1306_write_string(buf[i] + offset);
             }
@@ -334,7 +334,7 @@ void ssd1306_draw_cursor(unsigned char state, int x, int y)
 
 void ssd1306_refresh(char **buf, unsigned char cursor_on, int cursor_x, int cursor_y, unsigned rows)
 {
-    if (!rows) {
+    if (rows) {
         ssd1306_draw_framebuffer(buf, cursor_x, cursor_y, rows);
     }
     ssd1306_draw_cursor(cursor_on, cursor_x, cursor_y);

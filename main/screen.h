@@ -22,7 +22,8 @@ int screen_get_cursor_y(void);
 void screen_move_cursor_left(void);
 void screen_move_cursor_right(void);
 void screen_move_cursor_up(void);
-void screen_mode_cursor_down(void);
+void screen_move_cursor_down(void);
+void screen_move_cursor_start(void);
 
 signed char screen_add_line(char *line);
 signed char screen_add_line_at_index(unsigned char index, char *line);

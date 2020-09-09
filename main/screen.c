@@ -108,11 +108,16 @@ void screen_move_cursor_up(void)
     }
 }
 
-void screen_mode_cursor_down(void)
+void screen_move_cursor_down(void)
 {
     if (screen_dev.cursor_location_y > 0) {
         screen_dev.cursor_location_y--;
     }
+}
+
+void screen_move_cursor_start(void)
+{
+    screen_dev.cursor_location_x = 0;
 }
 
 static char *screen_get_framebuffer_line(unsigned char line)
