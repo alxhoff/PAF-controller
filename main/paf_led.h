@@ -41,5 +41,6 @@ esp_err_t paf_led_set_freq(unsigned int freq);
 unsigned int paf_led_get_freq(void);
 char paf_led_get_led(void);
 esp_err_t paf_led_init(paf_led_mode_t mode);
-
+unsigned int paf_led_get_time(void);
+void paf_led_set_time(unsigned int duration);
 #endif // __PAF_LED_H__

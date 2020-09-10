@@ -43,6 +43,8 @@ const static char get_root[] = "/";
 const static char get_btn[] = "led-toggle";
 const static char get_led[] = "led-status";
 const static char get_freq[] = "frequency";
+const static char get_onDuration[] = "duration";
+const static char get_set_onDuration[] = "duration-set";
 const static char get_set_freq[] = "freq-set";
 const static char get_dutycycle[] = "dutycycle";
 const static char get_set_dutycycle[] = "dc-set";
@@ -84,9 +86,15 @@ static esp_err_t http_server_get_handler(httpd_req_t *req)
         else if (strcmp(req->uri + sizeof(char), get_dutycycle) ==
                  0) {
             sprintf((char *)req->uri, "%d", paf_led_get_dc());
-            ESP_LOGI(__func__, "Handling dc");
+            ESP_LOGI(__func__, "Handling dc: %s", req->uri);
             httpd_resp_send(req, (const char *)req->uri,
                             HTTPD_RESP_USE_STRLEN);
+        }
+        else if (strcmp(req->uri + sizeof(char), get_onDuration) == 0)
+        {
+            sprintf((char*)req->uri, "%d", paf_led_get_time());
+            ESP_LOGI(__func__,"Handling on duration: %s", req->uri);
+            httpd_resp_send(req,(const char *)req->uri, HTTPD_RESP_USE_STRLEN);
         }
         else {
             httpd_resp_send(req, NULL, 0);
@@ -133,6 +141,14 @@ static esp_err_t http_server_post(httpd_req_t *req)
                     paf_led_set_freq(new_freq);
                     httpd_resp_send(req, "Freq Set",
                                     HTTPD_RESP_USE_STRLEN);
+                }
+                else if (strcmp(req->uri + sizeof(char),
+                                get_set_onDuration) == 0)
+                {
+                    unsigned int new_onTime = (unsigned int) strtoul(content_buf,NULL,10);
+                    ESP_LOGI(__func__, "Handling set on-duration: %u", new_onTime);
+                    paf_led_set_time(new_onTime);
+                    httpd_resp_send(req,"Duration Set", HTTPD_RESP_USE_STRLEN);
                 }
             }
         }

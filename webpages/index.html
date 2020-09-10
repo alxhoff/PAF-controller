@@ -1,4 +1,4 @@
-<html>
+ß09876521^^<html>
 
 <head>
 
@@ -27,6 +27,10 @@
         $.post($(this).attr("id"), $("#dc-val").val());
         setTimeout(refreshValues, 250);
       });
+      $("#duration-set").click(function(e) {
+        $.post($(this).attr("id"), $("#duration-val").val());
+        setTimeout(refreshValues, 250);
+      });
 
       function refreshValues() {
         $.get("led-status", function(res) {
@@ -42,6 +46,9 @@
         });
         $.get("dutycycle", function(res) {
           $("#pwm-dc").find("b").html(res);
+        });
+        $.get("duration", function(res) {
+          $("#onDuration").find("b").html(res);
         });
       }
       setTimeout(refreshValues, 250);
@@ -73,6 +80,24 @@
             <div class="row-sm">
               <div class="col-sm">
                 <div id="led-status" class="alert alert-info" role="alert"><b>OFF</b></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="row-sm align-items-center">
+        <div class="panel panel-default">
+          <div class="panel-heading">LED On Duration</div>
+          <div class="panel-body">
+            <div class="row align-items-center">
+              <div class="col-md-3">
+                <div id="onDuration" class="alert alert-warning" role="alert"><b>Current On Duration</b></div>
+              </div>
+              <div class="col-md-3">
+                <input type="text" id="duration" placeholder="Duration"></input>
+              </div>
+              <div class="col-md-3">
+                <button type="button" class="btn btn-default set" id="duration-set">SET</button>
               </div>
             </div>
           </div>
@@ -118,5 +143,4 @@
   </div>
 
 </body>
-
 </html>

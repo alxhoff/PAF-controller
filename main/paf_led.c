@@ -62,6 +62,11 @@ struct led_config {
                       .ledc_freq = PAF_DEF_LED_FREQ
                     };
 
+////
+////
+////
+unsigned int timerValue = 1000;
+
 static paf_led_mode_t led_mode = PAF_LED_MODE_NOTSET;
 
 char paf_led_get_led(void)
@@ -72,6 +77,9 @@ char paf_led_get_led(void)
 esp_err_t paf_led_init(paf_led_mode_t mode)
 {
     led_mode = mode;
+    // TODO: Generate a timer for controlling the on duration of the LED
+
+
     switch (mode) {
         case PAF_LED_MODE_GPIO:
             gpio_pad_select_gpio(PAF_DEF_LED_GPIO);
@@ -247,6 +255,7 @@ unsigned int paf_led_get_dc(void)
     return ledc_cfg.ledc_dc;
 }
 
+
 esp_err_t paf_led_set_freq(unsigned int freq)
 {
     if ((led_mode != PAF_LED_MODE_PWM) || (!ledc_cfg.ledc_initd)) {
@@ -272,4 +281,15 @@ unsigned int paf_led_get_freq(void)
     }
 
     return ledc_cfg.ledc_freq;
+}
+
+unsigned int paf_led_get_time(void)
+{
+    return timerValue;
+}
+
+void paf_led_set_time(unsigned int duration)
+{
+    timerValue = duration;
+    ESP_LOGI(__func__, "Timer set to %d", duration);
 }
