@@ -119,8 +119,6 @@ static esp_err_t http_server_post(httpd_req_t *req)
             content_buf[ret] = '\0';
             ESP_LOGI(__func__, "POST recv %d bytes", ret);
             if (ret > 0) {
-                ESP_LOGI(__func__,"if get_set_onDuration: %d", strcmp(req->uri + sizeof(char),
-                                get_set_onDuration) );
                 if (strcmp(req->uri + sizeof(char),
                            get_set_dutycycle) == 0) {
                     unsigned int new_dc =

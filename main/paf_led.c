@@ -26,6 +26,8 @@
 
 #include "driver/gpio.h"
 #include "driver/ledc.h"
+#include "driver/timer.h"
+
 
 #include "paf_config.h"
 #include "paf_led.h"
@@ -34,6 +36,8 @@
 #define PAF_LED_MODE LEDC_HIGH_SPEED_MODE
 #define PAF_LED_GPIO_PIN PAF_DEF_LED_GPIO
 #define PAF_LED_CHANNEL LEDC_CHANNEL_0
+
+
 
 ledc_timer_config_t ledc_timer = {
     .duty_resolution = LEDC_TIMER_13_BIT,
@@ -62,10 +66,21 @@ struct led_config {
                       .ledc_freq = PAF_DEF_LED_FREQ
                     };
 
-////
-////
-////
-unsigned int timerValue = 1000;
+
+
+timer_config_t hw_timer_config =
+{
+    //Setting counter prescaler to 8000 -> 0.1 ms resolution
+    .divider = 8000,
+    .counter_dir = TIMER_COUNT_UP,
+    .counter_en = TIMER_PAUSE,
+    .intr_type = TIMER_INTR_LEVEL,
+    .alarm_en = TIMER_ALARM_EN,
+    .auto_reload = TIMER_AUTORELOAD_EN
+};
+
+static intr_handle_t s_timer_handle;
+unsigned int led_onDuration_ms = 1000;
 
 static paf_led_mode_t led_mode = PAF_LED_MODE_NOTSET;
 
@@ -77,8 +92,7 @@ char paf_led_get_led(void)
 esp_err_t paf_led_init(paf_led_mode_t mode)
 {
     led_mode = mode;
-    // TODO: Generate a timer for controlling the on duration of the LED
-
+    paf_led_init_hw_timer();
 
     switch (mode) {
         case PAF_LED_MODE_GPIO:
@@ -190,6 +204,7 @@ esp_err_t paf_led_set_on(void)
             break;
     }
     ledc_cfg.led_status = 1;
+    timer_start(TIMER_GROUP_0,TIMER_0);
     return ret;
 }
 
@@ -285,11 +300,32 @@ unsigned int paf_led_get_freq(void)
 
 unsigned int paf_led_get_time(void)
 {
-    return timerValue;
+    return led_onDuration_ms;
 }
 
 void paf_led_set_time(unsigned int duration)
 {
-    timerValue = duration;
-    ESP_LOGI(__func__, "Timer set to %d", duration);
+    led_onDuration_ms = duration;
+    //Using 32 bit more than sufficient
+    timer_set_alarm_value(0,0,(uint64_t)duration);
+    ESP_LOGI(__func__, "Timer set to %d ms", duration);
+}
+
+static void timer0_tg0_isr(void* arg)
+{
+    paf_led_set_off();
+    timer_pause(TIMER_GROUP_0,TIMER_0);
+    //Reset irq + set for next time
+    TIMERG0.int_clr_timers.t0 = true;
+    TIMERG0.hw_timer[0].config.alarm_en = true;
+
+}
+
+void paf_led_init_hw_timer()
+{
+    timer_init(TIMER_GROUP_0,TIMER_0, &hw_timer_config);
+    timer_set_counter_value(TIMER_GROUP_0,TIMER_0, 0);
+    timer_set_alarm_value(TIMER_GROUP_0,TIMER_0, led_onDuration_ms);
+    timer_isr_register(TIMER_GROUP_0, TIMER_0,&timer0_tg0_isr,NULL,0,&s_timer_handle);
+    timer_enable_intr(TIMER_GROUP_0,TIMER_0);
 }
