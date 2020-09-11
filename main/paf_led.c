@@ -307,7 +307,7 @@ void paf_led_set_time(unsigned int duration)
 {
     led_onDuration_ms = duration;
     //Using 32 bit more than sufficient
-    timer_set_alarm_value(0,0,(uint64_t)duration);
+    timer_set_alarm_value(0,0,(uint64_t)duration*10);
     ESP_LOGI(__func__, "Timer set to %d ms", duration);
 }
 

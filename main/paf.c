@@ -43,7 +43,4 @@ void app_main(void)
     paf_led_init(PAF_DEF_LED_MODE);
     screen_init();
     paf_console_init();
-
-    screen_write_string("Test");
-    screen_log_fb();
 }
