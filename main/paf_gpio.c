@@ -84,4 +84,3 @@ int paf_set_gpio_low(unsigned int pin)
         return -1;
     }
 }
-
