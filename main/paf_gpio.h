@@ -28,19 +28,10 @@
 #include "driver/gpio.h"
 #include "paf_config.h"
 
-#define PAF_LED_1 (12)
-#define PAF_LED_2 (14)
-#define PAF_LED_3 (27)
-#define PAF_LED_4 (26)
-#define PAF_LED_5 (25)
-#define PAF_LED_6 (33)
-#define PAF_LED_7 (32)
-#define PAF_LED_8 (35)
-
 esp_err_t paf_gpio_init(uint64_t pin_set_register);
-esp_err_t paf_gpio_toggle_state(unsigned int pin);
-int paf_set_gpio_high(unsigned int pin);
-int paf_set_gpio_low(unsigned int pin);
+esp_err_t paf_gpio_toggle_state(gpio_num_t pin);
+esp_err_t paf_set_gpio_high(gpio_num_t pin);
+esp_err_t paf_set_gpio_low(gpio_num_t pin);
 
 
 #endif

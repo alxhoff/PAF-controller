@@ -36,4 +36,13 @@
 #define PAF_DEF_SCREEN_PRIORITY 3
 #define PAF_DEF_SCREEN_STACK 4096
 
+#define PAF_LED_1 (12)
+#define PAF_LED_2 (14)
+#define PAF_LED_3 (27)
+#define PAF_LED_4 (26)
+#define PAF_LED_5 (25)
+#define PAF_LED_6 (33)
+#define PAF_LED_7 (32)
+#define PAF_LED_8 (35)
+
 #endif // __PAF_CONFIG_H__
