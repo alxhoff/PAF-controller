@@ -1,13 +1,16 @@
+#ifndef __PAF_GPIO__
+#define __PAF_GPIO__
 
-/**
- * @file paf.c
- * @author Alex Hoffman
- * @date 25 August 2020
- * @brief Main application
+/*
+ *
+ * @file paf_gpio.h
+ * @author Lars Pauli
+ * @date 16 September 2020
+ * @brief GPIO control
  *
  * @verbatim
    ----------------------------------------------------------------------
-    Copyright (C) Alexander Hoffman, 2020
+    Copyright (C) Lars Pauli, 2020
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
     the Free Software Foundation, either version 3 of the License, or
@@ -22,31 +25,22 @@
 @endverbatim
  */
 
-#include <string.h>
-
-#include "freertos/FreeRTOS.h"
-#include "freertos/task.h"
-
-#include "paf_console.h"
-#include "paf_flash.h"
-#include "paf_wifi.h"
-#include "paf_webserver.h"
-#include "paf_led.h"
+#include "driver/gpio.h"
 #include "paf_config.h"
-#include "screen.h"
-#include "paf_gpio.h"
+
+#define PAF_LED_1 (12)
+#define PAF_LED_2 (14)
+#define PAF_LED_3 (27)
+#define PAF_LED_4 (26)
+#define PAF_LED_5 (25)
+#define PAF_LED_6 (33)
+#define PAF_LED_7 (32)
+#define PAF_LED_8 (35)
+
+esp_err_t paf_gpio_init(uint64_t pin_set_register);
+esp_err_t paf_gpio_toggle_state(unsigned int pin);
+int paf_set_gpio_high(unsigned int pin);
+int paf_set_gpio_low(unsigned int pin);
 
 
-
-void app_main(void)
-{
-    vTaskDelay(pdMS_TO_TICKS(100));
-    paf_wifi_init_ap();
-    paf_webserver_init();
-    paf_led_init(PAF_DEF_LED_MODE);
-    screen_init();
-    uint64_t pin_enabled_register = (1<<PAF_LED_3)|(1<<PAF_LED_4);
-    paf_gpio_init(pin_enabled_register);
-    paf_console_init();
-
-}
+#endif

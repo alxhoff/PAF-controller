@@ -31,7 +31,6 @@
 #include "esp32_ssd1306.h"
 #include "fonts.h"
 
-#define SSD1306_I2C_ADDR 0x78
 #define SSD1306_BACKGROUND 0
 #define SSD1306_FONT &Font_11x18
 
@@ -94,6 +93,8 @@ static esp_err_t ssd1306_write_start(void)
     if (!ssd1306_dev.i2c_cmd) {
         ssd1306_dev.i2c_cmd = i2c_cmd_link_create();
     }
+    ESP_ERROR_CHECK(i2c_reset_rx_fifo(PAF_DEF_I2C_NUM));
+    ESP_ERROR_CHECK(i2c_reset_tx_fifo(PAF_DEF_I2C_NUM));
     ESP_ERROR_CHECK(i2c_master_start(ssd1306_dev.i2c_cmd));
     return i2c_master_write_byte(ssd1306_dev.i2c_cmd,
                                  (OLED_I2C_ADDRESS << 1) | I2C_MASTER_WRITE,
@@ -103,6 +104,7 @@ static esp_err_t ssd1306_write_start(void)
 static esp_err_t ssd1306_write_end(void)
 {
     esp_err_t ret = i2c_master_stop(ssd1306_dev.i2c_cmd);
+    ret = i2c_master_cmd_begin(PAF_DEF_I2C_NUM,ssd1306_dev.i2c_cmd,100);
     i2c_cmd_link_delete(ssd1306_dev.i2c_cmd);
     ssd1306_dev.i2c_cmd = NULL;
     return ret;
@@ -112,6 +114,8 @@ static esp_err_t ssd1306_write_single_command(uint8_t command)
 {
     if (ssd1306_dev.i2c_cmd) {
         ssd1306_write_start();
+        ESP_ERROR_CHECK(i2c_master_write_byte(ssd1306_dev.i2c_cmd,
+                                              0b01000000, true));
         ESP_ERROR_CHECK(i2c_master_write_byte(ssd1306_dev.i2c_cmd,
                                               command, true));
         ssd1306_write_end();
@@ -123,6 +127,8 @@ static esp_err_t ssd1306_write_single_command(uint8_t command)
 static esp_err_t ssd1306_write_command(uint8_t command)
 {
     if (ssd1306_dev.i2c_cmd) {
+        ESP_ERROR_CHECK(i2c_master_write_byte(ssd1306_dev.i2c_cmd,
+                                              0b10000000, true));
         ESP_ERROR_CHECK(i2c_master_write_byte(ssd1306_dev.i2c_cmd,
                                               command, true));
         return ESP_OK;
@@ -351,11 +357,12 @@ static esp_err_t ssd1306_i2c_init(void)
         .scl_pullup_en = GPIO_PULLUP_ENABLE,
         .master.clk_speed = 100000,
     };
+     ret = i2c_driver_install(PAF_DEF_I2C_NUM, I2C_MODE_MASTER, 0, 0, 0);
     ESP_ERROR_CHECK(i2c_set_pin(PAF_DEF_I2C_NUM, PAF_DEF_OLED_SDA_PIN,
                                 PAF_DEF_OLED_SCL_PIN, true, true,
                                 I2C_MODE_MASTER));
     ESP_ERROR_CHECK(i2c_param_config(PAF_DEF_I2C_NUM, &i2c_config));
-    ret = i2c_driver_install(PAF_DEF_I2C_NUM, I2C_MODE_MASTER, 0, 0, 0);
+
     ESP_LOGI(__func__, "I2C Driver install: %s", esp_err_to_name(ret));
     ESP_ERROR_CHECK(ret);
 
@@ -379,7 +386,38 @@ signed char ssd1306_init(void)
     ssd1306_dev.background = SSD1306_BACKGROUND;
     ssd1306_dev.font = SSD1306_FONT;
 
-    /* Init LCD */
+    /*
+    ssd1306_write_single_command(OLED_CMD_DISPLAY_OFF);
+    ssd1306_write_single_command(OLED_CMD_SET_MEMORY_ADDR_MODE);
+    ssd1306_write_single_command(OLED_CMD_PAGE_ADDR_MODE);
+    ssd1306_write_single_command(OLED_CMD_PAGE_START_ADDR);
+    ssd1306_write_single_command(OLED_CMD_SET_COM_SCAN_MODE);
+    ssd1306_write_single_command(0x00); //---set low column address
+    ssd1306_write_single_command(0x10); //---set high column address
+    ssd1306_write_single_command(OLED_CONTROL_BYTE_DATA_STREAM);
+    ssd1306_write_single_command(OLED_CMD_SET_CONTRAST);
+    ssd1306_write_single_command(0xFF);
+    ssd1306_write_single_command(OLED_CMD_SET_SEGMENT_REMAP);
+    ssd1306_write_single_command(OLED_CMD_DISPLAY_NORMAL);
+    ssd1306_write_single_command(OLED_CMD_SET_MUX_RATIO);
+    ssd1306_write_single_command(0x3F);
+    ssd1306_write_single_command(OLED_CMD_DISPLAY_RAM);
+    ssd1306_write_single_command(OLED_CMD_SET_DISPLAY_OFFSET);
+    ssd1306_write_single_command(0x00); //-not offset
+    ssd1306_write_single_command(OLED_CMD_SET_DISPLAY_CLK_DIV);
+    ssd1306_write_single_command(0xF0); //--set divide ratio
+    ssd1306_write_single_command(OLED_CMD_SET_PRECHARGE);
+    ssd1306_write_single_command(0x22);
+    ssd1306_write_single_command(OLED_CMD_SET_COM_PIN_MAP);
+    ssd1306_write_single_command(OLED_CMD_SET_COM_PIN_RESET);
+    ssd1306_write_single_command(OLED_CMD_SET_VCOMH_DESELCT);
+    ssd1306_write_single_command(OLED_CMD_SET_VCOMH_0V77);
+    ssd1306_write_single_command(OLED_CMD_SET_CHARGE_PUMP);
+    ssd1306_write_single_command(OLED_CMD_SET_CHARGE_PUMP_ENABLE);
+    ssd1306_write_single_command(OLED_CMD_DISPLAY_ON);
+    */
+
+    //Init LCD
     ssd1306_write_start();
     ssd1306_write_command(OLED_CMD_DISPLAY_OFF);
     ssd1306_write_command(OLED_CMD_SET_MEMORY_ADDR_MODE);
@@ -410,6 +448,7 @@ signed char ssd1306_init(void)
     ssd1306_write_command(OLED_CMD_SET_CHARGE_PUMP_ENABLE);
     ssd1306_write_command(OLED_CMD_DISPLAY_ON);
     ssd1306_write_end();
+
 
     ssd1306_clear();
 

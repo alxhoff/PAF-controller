@@ -25,7 +25,6 @@
  */
 #include <stdint.h>
 
-
 #define OLED_I2C_ADDRESS   0x3C
 
 // Control byte
