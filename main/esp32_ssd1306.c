@@ -327,7 +327,8 @@ void ssd1306_write_string(char *str)
     }
 }
 
-void ssd1306_draw_framebuffer(char **buf, int cursor_x, unsigned cursor_y, unsigned rows)
+void ssd1306_draw_framebuffer(char **buf, int cursor_x, unsigned cursor_y,
+                              unsigned rows)
 {
     int offset = 0;
     if (buf) {
@@ -355,7 +356,8 @@ void ssd1306_draw_cursor(unsigned char state, int x, int y)
     }
 }
 
-void ssd1306_refresh(char **buf, unsigned char cursor_on, int cursor_x, int cursor_y, unsigned rows)
+void ssd1306_refresh(char **buf, unsigned char cursor_on, int cursor_x,
+                     int cursor_y, unsigned rows)
 {
     if (rows) {
         ssd1306_draw_framebuffer(buf, cursor_x, cursor_y, rows);
@@ -386,6 +388,16 @@ static esp_err_t ssd1306_i2c_init(void)
     ESP_LOGI(__func__, "SSD1306 I2C init'd");
 
     return ret;
+}
+
+signed char ssd1306_set_contrast(unsigned char contrast)
+{
+    ESP_ERROR_CHECK(ssd1306_write_start_stream());
+    ESP_ERROR_CHECK(ssd1306_write_command(OLED_CMD_SET_CONTRAST));
+    ESP_ERROR_CHECK(ssd1306_write_command(contrast));
+    ESP_ERROR_CHECK(ssd1306_write_end());
+
+    return 0;
 }
 
 signed char ssd1306_init(void)
@@ -434,7 +446,6 @@ signed char ssd1306_init(void)
     ssd1306_write_command(OLED_CMD_SET_CHARGE_PUMP_ENABLE);
     ssd1306_write_command(OLED_CMD_DISPLAY_ON);
     ssd1306_write_end();
-
 
     ssd1306_clear();
 

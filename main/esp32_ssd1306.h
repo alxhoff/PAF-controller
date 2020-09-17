@@ -78,5 +78,6 @@ void ssd1306_mv_cursor_left(void);
 void ssd1306_mv_cursor_right(void);
 unsigned char ssd1306_get_cols(void);
 unsigned char ssd1306_get_rows(void);
+signed char ssd1306_set_contrast(unsigned char contrast);
 
 #endif //__ESP32_SSD1306_H__
