@@ -53,12 +53,12 @@ const static char get_set_GPIO[] = "GPIO-set";
 
 int dutyCyclePercentToCounter(int duty_per)
 {
-    return (int)(duty_per*8191)/100;
+    return (int)((float)duty_per*8191)/100;
 }
 
 int dutyCycleCounterToPercent(int duty_cnt)
 {
-    return (int)((float)duty_cnt*100/8191);
+    return (int)((float)duty_cnt*100)/8191;
 }
 
 static esp_err_t http_server_get_handler(httpd_req_t *req)
@@ -76,8 +76,8 @@ static esp_err_t http_server_get_handler(httpd_req_t *req)
     }
     else if (strlen(req->uri) > 1) {
         if (strcmp(req->uri + sizeof(char), get_btn) == 0) {
-            ESP_LOGI(__func__, "Handling led btn");
-            paf_led_set_toggle();
+            ESP_LOGI(__func__, "Handling test btn");
+            paf_led_set_start_test();
             httpd_resp_send(req, NULL, 0);
         }
         else if (strcmp(req->uri + sizeof(char), get_led) == 0) {

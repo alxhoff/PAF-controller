@@ -68,20 +68,12 @@ struct led_config {
                     };
 
 struct pulsGen_config{
-    timer_config_t hw_timer1_config;
+    timer_config_t hw_timer_config;
     unsigned int pulse_on_duraton;
-    unsigned int pulse_off_duration;
-    unsigned int pulse_periode;
-} pulsGen_cfg.hw_timer1_config = {
-    //Setting counter prescaler to 8000 -> 0.1 ms resolution
-    .divider = 8000,
-    .counter_dir = TIMER_COUNT_UP,
-    .counter_en = TIMER_PAUSE,
-    .intr_type = TIMER_INTR_LEVEL,
-    .alarm_en = TIMER_ALARM_EN,
-    .auto_reload = TIMER_AUTORELOAD_EN
-};
-
+    unsigned int periode;
+    char pulse_inited;
+    char pulse_selected;
+} pulseGen_cfg;
 
 timer_config_t hw_timer0_config =
 {
@@ -110,6 +102,7 @@ esp_err_t paf_led_init(paf_led_mode_t mode)
 {
     led_mode = mode;
     paf_led_init_hw_timer();
+    paf_led_init_pulse();
 
     switch (mode) {
         case PAF_LED_MODE_GPIO:
@@ -221,7 +214,7 @@ esp_err_t paf_led_set_on(void)
             break;
     }
     ledc_cfg.led_status = 1;
-    timer_start(TIMER_GROUP_0,TIMER_0);
+
     return ret;
 }
 
@@ -247,6 +240,25 @@ esp_err_t paf_led_set_off(void)
     }
     ledc_cfg.led_status = 0;
     return ret;
+}
+
+esp_err_t paf_led_set_start_test(void)
+{
+    if(!ledc_cfg.ledc_initd)
+    {
+        return -1;
+    }
+    paf_led_set_on();
+
+    if(pulseGen_cfg.pulse_selected)
+    {
+        timer_start(TIMER_GROUP_1,TIMER_0);
+        timer_start(TIMER_GROUP_1,TIMER_1);
+    }
+    timer_start(TIMER_GROUP_0,TIMER_0);
+
+
+    return 0;
 }
 
 esp_err_t paf_led_set_toggle(void)
@@ -322,9 +334,6 @@ unsigned int paf_led_get_time(void)
     return led_onDuration_ms;
 }
 
-
-
-
 void paf_led_set_time(unsigned int duration)
 {
     led_onDuration_ms = duration;
@@ -342,40 +351,126 @@ static void timer0_tg0_isr(void* arg)
     TIMERG0.int_clr_timers.t0 = true;
     TIMERG0.hw_timer[0].config.alarm_en = true;
 
+    timer_pause(TIMER_GROUP_1,TIMER_0);
+    timer_pause(TIMER_GROUP_1,TIMER_1);
+    timer_set_counter_value(TIMER_GROUP_1,TIMER_0,0);
+    timer_set_counter_value(TIMER_GROUP_1,TIMER_1,0);
+}
+static void pulseGen_pulse_timer0_tg1_isr(void* arg)
+{
+    paf_led_set_off();
+    timer_pause(TIMER_GROUP_1,TIMER_0);
+    timer_set_counter_value(TIMER_GROUP_1,TIMER_0,0);
+
 }
 
-static void timer1_tg1_isr(void* arg)
+static void pulseGen_periode_timer1_tg1_isr(void* arg)
 {
-    // do something when alarm is acivated
+    paf_led_set_on();
+    timer_set_counter_value(TIMER_GROUP_1,TIMER_1,0);
+    timer_start(TIMER_GROUP_1,TIMER_0);
+    timer_start(TIMER_GROUP_1,TIMER_1);
+
+
+    // Activate Timer 0 Alarm
+    TIMERG1.int_clr_timers.t0= true;
+    TIMERG1.hw_timer[0].config.alarm_en = true;
+
+    // Activate Timer 1 Alarm
+    TIMERG1.int_clr_timers.t1= true;
+    TIMERG1.hw_timer[1].config.alarm_en = true;
 }
 
 void paf_led_init_hw_timer()
 {
     timer_init(TIMER_GROUP_0,TIMER_0, &hw_timer0_config);
     timer_set_counter_value(TIMER_GROUP_0,TIMER_0, 0);
-    timer_set_alarm_value(TIMER_GROUP_0,TIMER_0, led_onDuration_ms);
+    timer_set_alarm_value(TIMER_GROUP_0,TIMER_0, led_onDuration_ms*10);
     timer_isr_register(TIMER_GROUP_0, TIMER_0,&timer0_tg0_isr,NULL,0,&s_timer_handle);
     timer_enable_intr(TIMER_GROUP_0,TIMER_0);
 }
 
 esp_err_t paf_led_init_pulse()
 {
-    // check if T_PWM < T_pulse
+    pulseGen_cfg.periode  = 500;
+    pulseGen_cfg.pulse_on_duraton = 250;
+    pulseGen_cfg.pulse_inited = 1;
+    pulseGen_cfg.pulse_selected = 0;
 
+    //Setting counter prescaler to 8000 -> 0.1 ms resolution
+    pulseGen_cfg.hw_timer_config.divider = 8000;
+    pulseGen_cfg.hw_timer_config.counter_dir = TIMER_COUNT_UP;
+    pulseGen_cfg.hw_timer_config.counter_en = TIMER_PAUSE;
+    pulseGen_cfg.hw_timer_config.intr_type = TIMER_INTR_LEVEL;
+    pulseGen_cfg.hw_timer_config.alarm_en = TIMER_ALARM_EN;
+    pulseGen_cfg.hw_timer_config.auto_reload = TIMER_AUTORELOAD_EN;
+
+    esp_err_t ret = ESP_OK;
 
     //setup timer 0
-    timer_init(TIMER_GROUP_1,TIMER_0, &pulsGen_cfg.hw_timer1_config);
-    timer_set_counter_value(TIMER_GROUP_1,TIMER_0, 0);
-    timer_set_alarm_value(TIMER_GROUP_1,TIMER_0, pulsGen_cfg.pulse_duration_off);
-    timer_isr_register(TIMER_GROUP_1, TIMER_0,&timer1_tg1_isr,NULL,0,&s_timer_handle);
-    timer_enable_intr(TIMER_GROUP_1,TIMER_1);
+    ret |= timer_init(TIMER_GROUP_1,TIMER_0, &pulseGen_cfg.hw_timer_config);
+    ret |= timer_set_counter_value(TIMER_GROUP_1,TIMER_0, 0);
+    ret |= timer_set_alarm_value(TIMER_GROUP_1,TIMER_0, pulseGen_cfg.pulse_on_duraton);
+    ret |= timer_isr_register(TIMER_GROUP_1, TIMER_0,&pulseGen_pulse_timer0_tg1_isr,NULL,0,&s_timer_handle);
+    ret |= timer_enable_intr(TIMER_GROUP_1,TIMER_1);
 
     //setup timer 1
-    timer_init(TIMER_GROUP_1,TIMER_1, &pulsGen_cfg.hw_timer1_config);
-    timer_set_counter_value(TIMER_GROUP_1,TIMER_1, 0);
-    timer_set_alarm_value(TIMER_GROUP_1,TIMER_1,pulsGen_cfg.pulse_duration_on);
-    timer_isr_register(TIMER_GROUP_1, TIMER_1,&timer1_tg1_isr,NULL,0,&s_timer_handle);
-    timer_enable_intr(TIMER_GROUP_1,TIMER_1);
+    ret |= timer_init(TIMER_GROUP_1,TIMER_1, &pulseGen_cfg.hw_timer_config);
+    ret |= timer_set_counter_value(TIMER_GROUP_1,TIMER_1, 0);
+    ret |= timer_set_alarm_value(TIMER_GROUP_1,TIMER_1,pulseGen_cfg.periode);
+    ret |= timer_isr_register(TIMER_GROUP_1, TIMER_1,&pulseGen_periode_timer1_tg1_isr,NULL,0,&s_timer_handle);
+    ret |= timer_enable_intr(TIMER_GROUP_1,TIMER_1);
+
+    return ret;
 }
 
-esp_err_t paf_led_config_pulse();
+int paf_led_set_pulse_periode(unsigned int periode)
+{
+    if(periode > pulseGen_cfg.pulse_on_duraton)
+    {
+        return -1;
+    }
+
+    pulseGen_cfg.periode = periode;
+    return 0;
+}
+
+int paf_led_set_pulse_on_duration(unsigned int pulse_on_duration)
+{
+    if(pulse_on_duration > pulseGen_cfg.periode)
+    {
+        return -1;
+    }
+
+    pulseGen_cfg.pulse_on_duraton = pulse_on_duration;
+    return 0;
+
+}
+
+unsigned int paf_led_get_pulse_periode()
+{
+    if(!pulseGen_cfg.pulse_inited)
+    {
+        return -1;
+    }
+    return pulseGen_cfg.periode;
+}
+
+unsigned int paf_led_get_pulse_on_duration()
+{
+    if(!pulseGen_cfg.pulse_inited)
+    {
+        return -1;
+    }
+    return pulseGen_cfg.pulse_on_duraton;
+}
+
+void paf_led_set_selected()
+{
+    pulseGen_cfg.pulse_selected = 1;
+}
+
+void paf_led_set_not_selected()
+{
+    pulseGen_cfg.pulse_selected = 0;
+}
