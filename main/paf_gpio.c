@@ -21,7 +21,6 @@
    ----------------------------------------------------------------------
 @endverbatim
  */
-#include "esp_log.h"
 #include "paf_gpio.h"
 #include "esp_err.h"
 
