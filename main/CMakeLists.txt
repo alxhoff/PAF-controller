@@ -10,5 +10,6 @@ idf_component_register(SRCS
     "esp32_ssd1306.c"
     "fonts.c"
     "screen.c"
+    "paf_gpio.c"
     INCLUDE_DIRS ${PROJECT_SOURCE_DIR})
 

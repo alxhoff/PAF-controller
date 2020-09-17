@@ -33,6 +33,7 @@
 
 #include "paf_config.h"
 #include "paf_led.h"
+#include "paf_gpio.h"
 
 static httpd_handle_t http_server = NULL;
 
@@ -43,9 +44,22 @@ const static char get_root[] = "/";
 const static char get_btn[] = "led-toggle";
 const static char get_led[] = "led-status";
 const static char get_freq[] = "frequency";
+const static char get_onDuration[] = "duration";
+const static char get_set_onDuration[] = "duration-set";
 const static char get_set_freq[] = "freq-set";
 const static char get_dutycycle[] = "dutycycle";
 const static char get_set_dutycycle[] = "dc-set";
+const static char get_set_GPIO[] = "GPIO-set";
+
+int dutyCyclePercentToCounter(int duty_per)
+{
+    return (int)((float)duty_per * 8191) / 100;
+}
+
+int dutyCycleCounterToPercent(int duty_cnt)
+{
+    return (int)((float)duty_cnt * 100) / 8191;
+}
 
 static esp_err_t http_server_get_handler(httpd_req_t *req)
 {
@@ -62,8 +76,8 @@ static esp_err_t http_server_get_handler(httpd_req_t *req)
     }
     else if (strlen(req->uri) > 1) {
         if (strcmp(req->uri + sizeof(char), get_btn) == 0) {
-            ESP_LOGI(__func__, "Handling led btn");
-            paf_led_set_toggle();
+            ESP_LOGI(__func__, "Handling test btn");
+            paf_led_set_start_test();
             httpd_resp_send(req, NULL, 0);
         }
         else if (strcmp(req->uri + sizeof(char), get_led) == 0) {
@@ -83,10 +97,15 @@ static esp_err_t http_server_get_handler(httpd_req_t *req)
         }
         else if (strcmp(req->uri + sizeof(char), get_dutycycle) ==
                  0) {
-            sprintf((char *)req->uri, "%d", paf_led_get_dc());
-            ESP_LOGI(__func__, "Handling dc");
+            sprintf((char *)req->uri, "%d", dutyCycleCounterToPercent(paf_led_get_dc()));
+            ESP_LOGI(__func__, "Handling dc: %s", req->uri);
             httpd_resp_send(req, (const char *)req->uri,
                             HTTPD_RESP_USE_STRLEN);
+        }
+        else if (strcmp(req->uri + sizeof(char), get_onDuration) == 0) {
+            sprintf((char *)req->uri, "%d", paf_led_get_time());
+            ESP_LOGI(__func__, "Handling on duration: %s", req->uri);
+            httpd_resp_send(req, (const char *)req->uri, HTTPD_RESP_USE_STRLEN);
         }
         else {
             httpd_resp_send(req, NULL, 0);
@@ -118,7 +137,7 @@ static esp_err_t http_server_post(httpd_req_t *req)
                             content_buf, NULL, 10);
                     ESP_LOGI(__func__,
                              "Handling set dc: %u", new_dc);
-                    paf_led_set_dc(new_dc);
+                    paf_led_set_dc(dutyCyclePercentToCounter(new_dc));
                     httpd_resp_send(req, "DC Set",
                                     HTTPD_RESP_USE_STRLEN);
                 }
@@ -133,6 +152,19 @@ static esp_err_t http_server_post(httpd_req_t *req)
                     paf_led_set_freq(new_freq);
                     httpd_resp_send(req, "Freq Set",
                                     HTTPD_RESP_USE_STRLEN);
+                }
+                else if (strcmp(req->uri + sizeof(char),
+                                get_set_onDuration) == 0) {
+                    unsigned int new_onTime = (unsigned int) strtoul(content_buf, NULL, 10);
+                    ESP_LOGI(__func__, "Handling set on-duration: %u", new_onTime);
+                    paf_led_set_time(new_onTime);
+                    httpd_resp_send(req, "Duration Set", HTTPD_RESP_USE_STRLEN);
+                }
+                else if (strcmp(req->uri + sizeof(char), get_set_GPIO) == 0) {
+                    unsigned int GPIO_Pin = (unsigned int) strtoul(content_buf, NULL, 10);
+                    ESP_LOGI(__func__, "GPIO Pin %u toggled", GPIO_Pin);
+                    paf_gpio_toggle_state(GPIO_Pin);
+                    httpd_resp_send(req, "GPIO Toggled", HTTPD_RESP_USE_STRLEN);
                 }
             }
         }

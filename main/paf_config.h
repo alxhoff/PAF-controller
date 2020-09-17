@@ -3,7 +3,7 @@
 
 #define FREERTOS 1
 #define SCREEN_USE_CURSOR 1
-#define PAF_DEF_LED_GPIO (2)
+#define PAF_DEF_LED_GPIO (12)
 #define PAF_DEF_LED_DC (4000)
 #define PAF_DEF_LED_FREQ (5000)
 #define PAF_DEF_LED_PWM_FADE_TIME (3000)

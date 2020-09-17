@@ -31,7 +31,7 @@ typedef enum paf_led_mode {
     PAF_LED_MODE_PWM,
     PAF_LED_MODE_CONSOLE,
 } paf_led_mode_t;
-
+esp_err_t paf_led_set_start_test(void);
 esp_err_t paf_led_set_on(void);
 esp_err_t paf_led_set_off(void);
 esp_err_t paf_led_set_toggle(void);
@@ -41,5 +41,9 @@ esp_err_t paf_led_set_freq(unsigned int freq);
 unsigned int paf_led_get_freq(void);
 char paf_led_get_led(void);
 esp_err_t paf_led_init(paf_led_mode_t mode);
-
+unsigned int paf_led_get_time(void);
+void paf_led_set_time(unsigned int duration);
+void paf_led_init_hw_timer(void);
+esp_err_t paf_led_init_pulse(void);
+esp_err_t paf_led_set_start_test(void);
 #endif // __PAF_LED_H__
