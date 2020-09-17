@@ -30,8 +30,7 @@ uint64_t paf_gpio_en = 0;
 uint64_t paf_gpio_inited = 0;
 
 
-gpio_config_t pin_config_output =
-{
+gpio_config_t pin_config_output = {
     .pin_bit_mask = 0,
     .mode = GPIO_MODE_OUTPUT,
     .pull_up_en =  GPIO_PULLUP_ENABLE,
@@ -50,44 +49,39 @@ esp_err_t paf_gpio_init(uint64_t pin_set_register)
 esp_err_t paf_gpio_toggle_state(unsigned int pin)
 {
 
-   if(paf_gpio_inited & (1<<pin))
-   {
+    if (paf_gpio_inited & (1 << pin)) {
         //Get level
-        int level = (int) (~(paf_gpio_en & (1 << pin)) >> pin) & 1;
+        int level = (int)(~(paf_gpio_en & (1 << pin)) >> pin) & 1;
         //Toggle State
         paf_gpio_en ^= 1 << pin;
         return gpio_set_level(pin, level);
-   }
-   else
-   {
-     return -1;
-   }
+    }
+    else {
+        return -1;
+    }
 }
 
 int paf_set_gpio_high(unsigned int pin)
 {
-  if(paf_gpio_inited & (1<<pin))
-  {
-    gpio_set_level(pin,1);
-    paf_gpio_en |= (1<<pin);
-    return 0;
-  }
-  else
-  {
-    return -1;
-  }
+    if (paf_gpio_inited & (1 << pin)) {
+        gpio_set_level(pin, 1);
+        paf_gpio_en |= (1 << pin);
+        return 0;
+    }
+    else {
+        return -1;
+    }
 }
 
 int paf_set_gpio_low(unsigned int pin)
 {
-  if(paf_gpio_inited & (1<<pin))
-  {
-    gpio_set_level(pin,0);
-    paf_gpio_en &= ~(1<<pin);
-    return 0;
-  }
-  else
-  {
-    return -1;
-  }
+    if (paf_gpio_inited & (1 << pin)) {
+        gpio_set_level(pin, 0);
+        paf_gpio_en &= ~(1 << pin);
+        return 0;
+    }
+    else {
+        return -1;
+    }
 }
+

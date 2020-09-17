@@ -45,7 +45,7 @@ void app_main(void)
     paf_webserver_init();
     paf_led_init(PAF_DEF_LED_MODE);
     screen_init();
-    uint64_t pin_enabled_register = (1<<PAF_LED_3)|(1<<PAF_LED_4);
+    uint64_t pin_enabled_register = (1 << PAF_LED_3) | (1 << PAF_LED_4);
     paf_gpio_init(pin_enabled_register);
     paf_console_init();
 

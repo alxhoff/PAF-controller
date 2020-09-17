@@ -104,7 +104,7 @@ static esp_err_t ssd1306_write_start(void)
 static esp_err_t ssd1306_write_end(void)
 {
     esp_err_t ret = i2c_master_stop(ssd1306_dev.i2c_cmd);
-    ret = i2c_master_cmd_begin(PAF_DEF_I2C_NUM,ssd1306_dev.i2c_cmd,100);
+    ret = i2c_master_cmd_begin(PAF_DEF_I2C_NUM, ssd1306_dev.i2c_cmd, 100);
     i2c_cmd_link_delete(ssd1306_dev.i2c_cmd);
     ssd1306_dev.i2c_cmd = NULL;
     return ret;
@@ -357,7 +357,7 @@ static esp_err_t ssd1306_i2c_init(void)
         .scl_pullup_en = GPIO_PULLUP_ENABLE,
         .master.clk_speed = 100000,
     };
-     ret = i2c_driver_install(PAF_DEF_I2C_NUM, I2C_MODE_MASTER, 0, 0, 0);
+    ret = i2c_driver_install(PAF_DEF_I2C_NUM, I2C_MODE_MASTER, 0, 0, 0);
     ESP_ERROR_CHECK(i2c_set_pin(PAF_DEF_I2C_NUM, PAF_DEF_OLED_SDA_PIN,
                                 PAF_DEF_OLED_SCL_PIN, true, true,
                                 I2C_MODE_MASTER));

@@ -53,12 +53,12 @@ const static char get_set_GPIO[] = "GPIO-set";
 
 int dutyCyclePercentToCounter(int duty_per)
 {
-    return (int)((float)duty_per*8191)/100;
+    return (int)((float)duty_per * 8191) / 100;
 }
 
 int dutyCycleCounterToPercent(int duty_cnt)
 {
-    return (int)((float)duty_cnt*100)/8191;
+    return (int)((float)duty_cnt * 100) / 8191;
 }
 
 static esp_err_t http_server_get_handler(httpd_req_t *req)
@@ -102,11 +102,10 @@ static esp_err_t http_server_get_handler(httpd_req_t *req)
             httpd_resp_send(req, (const char *)req->uri,
                             HTTPD_RESP_USE_STRLEN);
         }
-        else if (strcmp(req->uri + sizeof(char), get_onDuration) == 0)
-        {
-            sprintf((char*)req->uri, "%d", paf_led_get_time());
-            ESP_LOGI(__func__,"Handling on duration: %s", req->uri);
-            httpd_resp_send(req,(const char *)req->uri, HTTPD_RESP_USE_STRLEN);
+        else if (strcmp(req->uri + sizeof(char), get_onDuration) == 0) {
+            sprintf((char *)req->uri, "%d", paf_led_get_time());
+            ESP_LOGI(__func__, "Handling on duration: %s", req->uri);
+            httpd_resp_send(req, (const char *)req->uri, HTTPD_RESP_USE_STRLEN);
         }
         else {
             httpd_resp_send(req, NULL, 0);
@@ -155,19 +154,17 @@ static esp_err_t http_server_post(httpd_req_t *req)
                                     HTTPD_RESP_USE_STRLEN);
                 }
                 else if (strcmp(req->uri + sizeof(char),
-                                get_set_onDuration) == 0)
-                {
-                    unsigned int new_onTime = (unsigned int) strtoul(content_buf,NULL,10);
+                                get_set_onDuration) == 0) {
+                    unsigned int new_onTime = (unsigned int) strtoul(content_buf, NULL, 10);
                     ESP_LOGI(__func__, "Handling set on-duration: %u", new_onTime);
                     paf_led_set_time(new_onTime);
-                    httpd_resp_send(req,"Duration Set", HTTPD_RESP_USE_STRLEN);
+                    httpd_resp_send(req, "Duration Set", HTTPD_RESP_USE_STRLEN);
                 }
-                else if (strcmp(req->uri + sizeof(char), get_set_GPIO)==0)
-                {
-                    unsigned int GPIO_Pin= (unsigned int) strtoul(content_buf,NULL,10);
-                    ESP_LOGI(__func__,"GPIO Pin %u toggled",GPIO_Pin);
+                else if (strcmp(req->uri + sizeof(char), get_set_GPIO) == 0) {
+                    unsigned int GPIO_Pin = (unsigned int) strtoul(content_buf, NULL, 10);
+                    ESP_LOGI(__func__, "GPIO Pin %u toggled", GPIO_Pin);
                     paf_gpio_toggle_state(GPIO_Pin);
-                    httpd_resp_send(req,"GPIO Toggled", HTTPD_RESP_USE_STRLEN);
+                    httpd_resp_send(req, "GPIO Toggled", HTTPD_RESP_USE_STRLEN);
                 }
             }
         }
