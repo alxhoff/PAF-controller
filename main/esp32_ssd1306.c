@@ -101,6 +101,9 @@ static esp_err_t ssd1306_write_byte(uint8_t byte)
 static esp_err_t ssd1306_write_address(void)
 {
     if (!ssd1306_dev.i2c_cmd) {
+        if (ssd1306_verbose) {
+            ESP_LOGI(__func__, "Link created");
+        }
         ssd1306_dev.i2c_cmd = i2c_cmd_link_create();
     }
     ESP_ERROR_CHECK(i2c_reset_rx_fifo(PAF_DEF_I2C_NUM));
