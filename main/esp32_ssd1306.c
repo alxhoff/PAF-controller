@@ -95,7 +95,9 @@ static esp_err_t ssd1306_write_byte(uint8_t byte)
         ESP_LOGI(__func__, "Writing byte: 0x%02X", byte);
     }
 
-    return (ssd1306_dev.i2c_cmd ? i2c_master_write_byte(ssd1306_dev.i2c_cmd, byte, true) : ESP_FAIL);
+    return (ssd1306_dev.i2c_cmd ?
+            i2c_master_write_byte(ssd1306_dev.i2c_cmd, byte, true) :
+            ESP_FAIL);
 }
 
 static esp_err_t ssd1306_write_address(void)
@@ -109,12 +111,14 @@ static esp_err_t ssd1306_write_address(void)
     ESP_ERROR_CHECK(i2c_reset_rx_fifo(PAF_DEF_I2C_NUM));
     ESP_ERROR_CHECK(i2c_reset_tx_fifo(PAF_DEF_I2C_NUM));
     ESP_ERROR_CHECK(i2c_master_start(ssd1306_dev.i2c_cmd));
+    if (ssd1306_verbose) {
+        ESP_LOGI(__func__, "Master started");
+    }
     return ssd1306_write_byte((OLED_I2C_ADDRESS << 1) | I2C_MASTER_WRITE);
 }
 
 static esp_err_t ssd1306_write_start_single(void)
 {
-
     if (ssd1306_verbose) {
         ESP_LOGI(__func__, "Starting single CMD");
     }
@@ -147,11 +151,21 @@ static esp_err_t ssd1306_write_end(void)
         ESP_LOGI(__func__, "Write end");
     }
 
-    esp_err_t ret = i2c_master_stop(ssd1306_dev.i2c_cmd);
-    ret = i2c_master_cmd_begin(PAF_DEF_I2C_NUM, ssd1306_dev.i2c_cmd, 100);
+    ESP_ERROR_CHECK(i2c_master_stop(ssd1306_dev.i2c_cmd));
+    if (ssd1306_verbose) {
+        ESP_LOGI(__func__, "Master stopped");
+    }
+    ESP_ERROR_CHECK(i2c_master_cmd_begin(PAF_DEF_I2C_NUM,
+                                         ssd1306_dev.i2c_cmd, 100));
+    if (ssd1306_verbose) {
+        ESP_LOGI(__func__, "Master CMD begin");
+    }
     i2c_cmd_link_delete(ssd1306_dev.i2c_cmd);
+    if (ssd1306_verbose) {
+        ESP_LOGI(__func__, "Link deleted");
+    }
     ssd1306_dev.i2c_cmd = NULL;
-    return ret;
+    return ESP_OK;
 }
 
 static esp_err_t ssd1306_write_single_command(uint8_t command)
