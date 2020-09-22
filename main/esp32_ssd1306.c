@@ -139,6 +139,9 @@ static esp_err_t ssd1306_write_start_stream(void)
 
     esp_err_t ret;
     if ((ret = ssd1306_write_address()) != ESP_OK) {
+        if (ssd1306_verbose) {
+            ESP_LOGI(__func__, "Writing address failed");
+        }
         return ret;
     }
 
