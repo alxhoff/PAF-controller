@@ -170,13 +170,10 @@ static esp_err_t ssd1306_write_end(void)
 
 static esp_err_t ssd1306_write_single_command(uint8_t command)
 {
-    if (ssd1306_dev.i2c_cmd) {
-        ESP_ERROR_CHECK(ssd1306_write_start_single());
-        ESP_ERROR_CHECK(ssd1306_write_byte(command));
-        ssd1306_write_end();
-        return ESP_OK;
-    }
-    return ESP_FAIL;
+    ESP_ERROR_CHECK(ssd1306_write_start_single());
+    ESP_ERROR_CHECK(ssd1306_write_byte(command));
+    ssd1306_write_end();
+    return ESP_OK;
 }
 
 static esp_err_t ssd1306_write_command(uint8_t command)
