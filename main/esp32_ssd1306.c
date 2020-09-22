@@ -164,6 +164,10 @@ static esp_err_t ssd1306_write_single_command(uint8_t command)
 
 static esp_err_t ssd1306_write_command(uint8_t command)
 {
+    if (ssd1306_verbose) {
+        ESP_LOGI(__func__, "Write command: 0x%02X", command);
+    }
+
     if (ssd1306_dev.i2c_cmd) {
         ESP_ERROR_CHECK(ssd1306_write_byte(command));
         return ESP_OK;
