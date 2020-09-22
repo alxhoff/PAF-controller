@@ -36,7 +36,7 @@
 #include "screen.h"
 #include "paf_gpio.h"
 
-
+unsigned int paf_verbose = 1;
 
 void app_main(void)
 {
@@ -44,7 +44,7 @@ void app_main(void)
     paf_wifi_init_ap();
     paf_webserver_init();
     paf_led_init(PAF_DEF_LED_MODE);
-    screen_init();
+    screen_init(paf_verbose);
     uint64_t pin_enabled_register = (1 << PAF_LED_3) | (1 << PAF_LED_4);
     paf_gpio_init(pin_enabled_register);
     paf_console_init();

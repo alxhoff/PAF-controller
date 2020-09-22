@@ -373,11 +373,11 @@ signed char screen_write_string_at_pos(unsigned int pos, char *str)
                screen_dev.cursor_location_y, pos, str);
 }
 
-signed char screen_init(void)
+signed char screen_init(unsigned int verbose)
 {
     int err;
     ESP_LOGI(__func__, "Starting screen init");
-    err = SCREEN_INIT();
+    err = SCREEN_INIT(verbose);
     if (err) {
         ESP_LOGI(__func__, "Screen dev init failed");
         return -1;

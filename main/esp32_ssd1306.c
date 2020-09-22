@@ -51,6 +51,7 @@ typedef enum {
 } SSD1306_colour_t;
 
 typedef struct ssd1306_device ssd1306_device_t;
+static unsigned int ssd1306_verbose = 0;
 
 struct ssd1306_device {
     uint16_t x;
@@ -88,6 +89,15 @@ unsigned char ssd1306_get_rows(void)
     return SSD1306_HEIGHT_CHARS;
 }
 
+static esp_err_t ssd1306_write_byte(uint8_t byte)
+{
+    if (ssd1306_verbose) {
+        ESP_LOGI(__func__, "Writing byte: 0x%02X", byte);
+    }
+
+    return (ssd1306_dev.i2c_cmd ? i2c_master_write_byte(ssd1306_dev.i2c_cmd, byte, true) : ESP_FAIL);
+}
+
 static esp_err_t ssd1306_write_address(void)
 {
     if (!ssd1306_dev.i2c_cmd) {
@@ -96,35 +106,44 @@ static esp_err_t ssd1306_write_address(void)
     ESP_ERROR_CHECK(i2c_reset_rx_fifo(PAF_DEF_I2C_NUM));
     ESP_ERROR_CHECK(i2c_reset_tx_fifo(PAF_DEF_I2C_NUM));
     ESP_ERROR_CHECK(i2c_master_start(ssd1306_dev.i2c_cmd));
-    return i2c_master_write_byte(ssd1306_dev.i2c_cmd,
-                                 (OLED_I2C_ADDRESS << 1) | I2C_MASTER_WRITE,
-                                 true);
+    return ssd1306_write_byte((OLED_I2C_ADDRESS << 1) | I2C_MASTER_WRITE);
 }
 
 static esp_err_t ssd1306_write_start_single(void)
 {
+
+    if (ssd1306_verbose) {
+        ESP_LOGI(__func__, "Starting single CMD");
+    }
+
     esp_err_t ret;
     if ((ret = ssd1306_write_address()) != ESP_OK) {
         return ret;
     }
 
-    return i2c_master_write_byte(ssd1306_dev.i2c_cmd,
-                                 OLED_CONTROL_BYTE_CMD_SINGLE, true);
+    return ssd1306_write_byte(OLED_CONTROL_BYTE_CMD_SINGLE);
 }
 
 static esp_err_t ssd1306_write_start_stream(void)
 {
+    if (ssd1306_verbose) {
+        ESP_LOGI(__func__, "Starting stream CMD");
+    }
+
     esp_err_t ret;
     if ((ret = ssd1306_write_address()) != ESP_OK) {
         return ret;
     }
 
-    return i2c_master_write_byte(ssd1306_dev.i2c_cmd,
-                                 OLED_CONTROL_BYTE_CMD_STREAM, true);
+    return ssd1306_write_byte(OLED_CONTROL_BYTE_CMD_STREAM);
 }
 
 static esp_err_t ssd1306_write_end(void)
 {
+    if (ssd1306_verbose) {
+        ESP_LOGI(__func__, "Write end");
+    }
+
     esp_err_t ret = i2c_master_stop(ssd1306_dev.i2c_cmd);
     ret = i2c_master_cmd_begin(PAF_DEF_I2C_NUM, ssd1306_dev.i2c_cmd, 100);
     i2c_cmd_link_delete(ssd1306_dev.i2c_cmd);
@@ -136,8 +155,7 @@ static esp_err_t ssd1306_write_single_command(uint8_t command)
 {
     if (ssd1306_dev.i2c_cmd) {
         ESP_ERROR_CHECK(ssd1306_write_start_single());
-        ESP_ERROR_CHECK(i2c_master_write_byte(ssd1306_dev.i2c_cmd,
-                                              command, true));
+        ESP_ERROR_CHECK(ssd1306_write_byte(command));
         ssd1306_write_end();
         return ESP_OK;
     }
@@ -147,8 +165,7 @@ static esp_err_t ssd1306_write_single_command(uint8_t command)
 static esp_err_t ssd1306_write_command(uint8_t command)
 {
     if (ssd1306_dev.i2c_cmd) {
-        ESP_ERROR_CHECK(i2c_master_write_byte(ssd1306_dev.i2c_cmd,
-                                              command, true));
+        ESP_ERROR_CHECK(ssd1306_write_byte(command));
         return ESP_OK;
     }
     return ESP_FAIL;
@@ -400,9 +417,11 @@ signed char ssd1306_set_contrast(unsigned char contrast)
     return 0;
 }
 
-signed char ssd1306_init(void)
+signed char ssd1306_init(unsigned int verbose)
 {
     ESP_ERROR_CHECK(ssd1306_i2c_init());
+
+    ssd1306_verbose = verbose;
 
     ssd1306_dev.clear = &ssd1306_clear;
     ssd1306_dev.update = &ssd1306_update_screen;

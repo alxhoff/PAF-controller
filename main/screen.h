@@ -41,6 +41,6 @@ signed char screen_write_string_at_index_and_pos(unsigned char index, unsigned i
 
 void screen_log_fb(void);
 
-signed char screen_init(void);
+signed char screen_init(unsigned int verbose);
 
 #endif /* SCREEN_H_ */
