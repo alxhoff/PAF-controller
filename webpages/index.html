@@ -1,39 +1,37 @@
 <html>
 
 <head>
-
   <!-- JQuery Import -->
   <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.12.0/jquery.min.js"></script>
 
-  <!-- Latest compiled and minified CSS -->
-  <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap.min.css" integrity="sha384-1q8mTJOASx8j1Au+a5WDVnPi2lkFfwwEAa8hDDdjZlpLegxhjVME1fgjWPGmkzs7" crossorigin="anonymous">
-
-  <!-- Optional theme -->
-  <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap-theme.min.css" integrity="sha384-fLW2N01lMqjakBkx3l/M9EahuwpSfeNvV63J5ezn3uZzapT0u7EYsXMjQV+0En5r" crossorigin="anonymous">
+  <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/css/bootstrap.min.css"
+    integrity="sha384-Vkoo8x4CGsO3+Hhxv8T/Q5PaXtkKtu6ug5TOeNV6gBiFeWPGFN9MuhOf23Q9Ifjh" crossorigin="anonymous">
 
   <!-- Latest compiled and minified JavaScript -->
-  <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/js/bootstrap.min.js" integrity="sha384-0mSbJDEHialfmuBBQP6A4Qrprq5OVfW37PRR3j5ELqxss1yVqOtnepnHVP9aJ7xS" crossorigin="anonymous"></script>
+  <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/js/bootstrap.min.js"
+    integrity="sha384-0mSbJDEHialfmuBBQP6A4Qrprq5OVfW37PRR3j5ELqxss1yVqOtnepnHVP9aJ7xS"
+    crossorigin="anonymous"></script>
   <script type="text/javascript">
-    $(document).ready(function() {
-      $("#led-toggle").click(function(e) {
+    $(document).ready(function () {
+      $("#led-toggle").click(function (e) {
         $.get($(this).attr("id"));
         setTimeout(refreshValues, 250);
       });
-      $("#freq-set").click(function(e) {
+      $("#freq-set").click(function (e) {
         $.post($(this).attr("id"), $("#freq-val").val());
         setTimeout(refreshValues, 250);
       });
-      $("#dc-set").click(function(e) {
+      $("#dc-set").click(function (e) {
         $.post($(this).attr("id"), $("#dc-val").val());
         setTimeout(refreshValues, 250);
       });
-      $("#duration-set").click(function(e) {
+      $("#duration-set").click(function (e) {
         $.post($(this).attr("id"), $("#duration-val").val());
         setTimeout(refreshValues, 250);
       });
 
       function refreshValues() {
-        $.get("led-status", function(res) {
+        $.get("led-status", function (res) {
           if (res == "OFF")
             $("#led-status").removeClass("alert-success").addClass("alert-info");
           else
@@ -41,13 +39,13 @@
 
           $("#led-status").find("b").html(res);
         });
-        $.get("frequency", function(res) {
+        $.get("frequency", function (res) {
           $("#pwm-freq").find("b").html(res);
         });
-        $.get("dutycycle", function(res) {
+        $.get("dutycycle", function (res) {
           $("#pwm-dc").find("b").html(res);
         });
-        $.get("duration", function(res) {
+        $.get("duration", function (res) {
           $("#onDuration").find("b").html(res);
         });
       }
@@ -55,92 +53,90 @@
     });
   </script>
   <meta name="viewport" content="width=device-width, initial-scale=1 user-scalable=no">
-  <link rel="icon" type="image/png" href="https://example.com/favicon.png"/>
+  <link rel="icon" type="image/png" href="https://example.com/favicon.png" />
+  <style>
+    .row {
+      padding:5px;
+    }
+  </style>
 </head>
 
 <body>
   <div class="container">
-    <div class="col align-items-center">
-      <div class="row-sm align-items-center">
-        <div class="panel panel-default">
-          <div class="panel-heading">Test</div>
-          <div class="panel-body">
-            <div class="row-sm align-items-center">
-              <div class="col-sm">
-                <button type="button" class="btn btn-default btn-block led" id="led-toggle">Start Test</button>
-              </div>
+    <div class="col">
+      <div class="row justify-content-md-center align-items-center ml-auto">
+
+        <div class="col-md-9">
+          <button type="button" class="btn btn-secondary btn-lg btn-block led" id="led-toggle">
+            Start/Stop Test | <span id="led-status" class="badge badge-warning">Not Running</span></h3>            
+          </button>
+        </div>
+
+      </div>
+
+      <div class="row justify-content-md-center align-items-center ml-auto">
+
+        <div class="col-md-3">
+          <div class="alert alert-dark" id="onDuration" role="alert"><b>Current Test Duration</b></div>
+        </div>
+
+        <div class="col-md-3">
+          <div class="input-group">
+            <input type="number"  class="form-control" id="duration-val" placeholder="Duration"><label for="duration-val"></label></input>
+            <div class="input-group-append">
+              <span class="input-group-text">ms</span>
             </div>
           </div>
         </div>
-      </div>
-      <div class="row-sm align-items-center">
-        <div class="panel panel-default">
-          <div class="panel-heading">Test Status</div>
-          <div class="panel-body">
-            <div class="row-sm">
-              <div class="col-sm">
-                <div id="led-status" class="alert alert-info" role="alert"><b>Not Running</b></div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-      <div class="row-sm align-items-center">
-        <div class="panel panel-default">
-          <div class="panel-heading">Test Duration [ms]</div>
-          <div class="panel-body">
-            <div class="row align-items-center">
-              <div class="col-md-3">
-                <div id="onDuration" class="alert alert-warning" role="alert"><b>Current Test Duration</b></div>
-              </div>
-              <div class="col-md-3">
-                <input type="text" id="duration-val" placeholder="Duration"><label for="duration-val">ms</label></input>
-              </div>
-              <div class="col-md-3">
-                <button type="button" class="btn btn-default set" id="duration-set">SET</button>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-      <div class="row-sm align-items-center">
-        <div class="panel panel-default">
-          <div class="panel-heading">PWM Frequency</div>
-          <div class="panel-body">
-            <div class="row align-items-center">
-              <div class="col-md-3">
-                <div id="pwm-freq" class="alert alert-warning" role="alert"><b>Current Freq</b></div>
-              </div>
-              <div class="col-md-3">
-                <input type="text" id="freq-val" placeholder="Freq"></input>
-              </div>
-              <div class="col-md-3">
-                <button type="button" class="btn btn-default set" id="freq-set">SET</button>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-      <div class="row-sm align-items-center">
-        <div class="panel panel-default">
-          <div class="panel-heading">PWM Duty Cycle</div>
-          <div class="panel-body">
-            <div class="row align-items-center">
-              <div class="col-md-3 align-items-center">
-                <div id="pwm-dc" class="alert alert-warning" role="alert"><b>Current Duty Cycle</b></div>
-              </div>
-              <div class="col-md-3">
-                <input type="number" id="dc-val" placeholder="Duty Cycle" min="0" max="100" step ="1" value = "50"><label for="dc-val">% Duty Cycle</label></input>
-              </div>
-              <div class="col-md-3">
-                <button type="button" class="btn btn-default set" id="dc-set">SET</button>
-              </div>
-            </div>
-          </div>
+
+        <div class="col-md-3">
+          <button type="button" class="btn btn-secondary btn-lg btn-block set" id="duration-set">SET</button>
         </div>
       </div>
 
+      <div class="row justify-content-md-center align-items-center ml-auto">
+
+        <div class="col-md-3">
+          <div id="pwm-freq" class="alert alert-dark" role="alert"><b>Current PWM Freq</b></div>
+        </div>
+
+        <div class="col-md-3">
+          <div class="input-group">
+            <input type="number"  class="form-control" id="freq-val" placeholder="Freq"></input>
+            <div class="input-group-append">
+              <span class="input-group-text">Hz</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="col-md-3">
+          <button type="button" class="btn btn-secondary btn-lg btn-block set" id="freq-set">SET</button>
+        </div>
+      </div>
+
+      <div class="row justify-content-md-center align-items-center ml-auto">
+
+        <div class="col-md-3">
+          <div id="pwm-dc" class="alert alert-dark" role="alert"><b>Current PWM Duty Cycle</b></div>
+        </div>
+
+        <div class="col-md-3">
+          <div class="input-group">
+            <input type="number" class="form-control" id="dc-val" placeholder="Duty Cycle" min="0" max="100" step="1">
+            <div class="input-group-append">
+              <span class="input-group-text">%</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="col-md-3">
+          <button type="button" class="btn btn-secondary btn-lg btn-block set" id="dc-set">SET</button>
+        </div>
+
+      </div>
+
+    </div>
   </div>
-
 </body>
+
 </html>
