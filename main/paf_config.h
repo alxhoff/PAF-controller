@@ -41,22 +41,22 @@
 
 #define PAF_TEST_COUNT 15
 #define PAF_DEF_TESTS static struct test_config paf_def_tests[PAF_TEST_COUNT] = { \
-    PAF_TEST(1000, 2000, 5) \
-    PAF_TEST(2000, 2000, 5) \
-    PAF_TEST(3000, 2000, 5) \
-    PAF_TEST(4000, 2000, 5) \
-    PAF_TEST(5000, 2000, 5) \
-    PAF_TEST(6000, 2000, 5) \
-    PAF_TEST(1000, 2000, 5) \
-    PAF_TEST(1000, 2000, 5) \
-    PAF_TEST(1000, 2000, 5) \
-    PAF_TEST(1000, 2000, 5) \
-    PAF_TEST(1000, 2000, 5) \
-    PAF_TEST(1000, 2000, 5) \
-    PAF_TEST(1000, 2000, 5) \
-    PAF_TEST(1000, 2000, 5) \
-    PAF_TEST(1000, 2000, 5) \
-}
+        PAF_TEST(1000, 2000, 5) \
+        PAF_TEST(2000, 2000, 5) \
+        PAF_TEST(3000, 2000, 5) \
+        PAF_TEST(4000, 2000, 5) \
+        PAF_TEST(5000, 2000, 5) \
+        PAF_TEST(6000, 2000, 5) \
+        PAF_TEST(1000, 2000, 5) \
+        PAF_TEST(1000, 2000, 5) \
+        PAF_TEST(1000, 2000, 5) \
+        PAF_TEST(1000, 2000, 5) \
+        PAF_TEST(1000, 2000, 5) \
+        PAF_TEST(1000, 2000, 5) \
+        PAF_TEST(1000, 2000, 5) \
+        PAF_TEST(1000, 2000, 5) \
+        PAF_TEST(1000, 2000, 5) \
+    }
 
 
 #endif // __PAF_CONFIG_H__

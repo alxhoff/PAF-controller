@@ -34,6 +34,7 @@
 #include "paf_config.h"
 #include "paf_led.h"
 #include "paf_gpio.h"
+#include "paf_test.h"
 
 static httpd_handle_t http_server = NULL;
 
@@ -41,15 +42,25 @@ const static char http_200_hdr[] = "200 OK";
 const static char http_content_type_html[] = "text/html";
 
 const static char get_root[] = "/";
-const static char get_btn[] = "led-toggle";
-const static char get_led[] = "led-status";
-const static char get_freq[] = "frequency";
-const static char get_onDuration[] = "duration";
+const static char get_btn_test_start[] = "btn-test-start";
+const static char get_btn_test_stop[] = "btn-test-stop";
+const static char get_btn_next[] = "btn-next";
+const static char get_btn_prev[] = "btn-prev";
+const static char get_test_status[] = "test-status";
+const static char get_test_count_total[] = "get_test_count_total";
+const static char get_test_number[] = "get_test_num";
+const static char get_test_freq[] = "get_test_freq";
+const static char get_test_dc[] = "get_test_dc";
+const static char get_test_dur[] = "get_test_dur";
+const static char get_freq[] = "get_frequency";
+const static char get_time_remaining[] = "get_time_remaining";
+const static char get_onDuration[] = "get_duration";
 const static char get_set_onDuration[] = "duration-set";
 const static char get_set_freq[] = "freq-set";
-const static char get_dutycycle[] = "dutycycle";
+const static char get_dutycycle[] = "get_dutycycle";
 const static char get_set_dutycycle[] = "dc-set";
 const static char get_set_GPIO[] = "GPIO-set";
+const static char post_auto_check[] = "auto-set";
 
 int dutyCyclePercentToCounter(int duty_per)
 {
@@ -71,22 +82,47 @@ static esp_err_t http_server_get_handler(httpd_req_t *req)
     httpd_resp_set_type(req, http_content_type_html);
     //ROOT
     if ((strlen(req->uri) == 1) && (strcmp(req->uri, get_root) == 0)) {
+        ESP_LOGI(__func__, "Handling GET root");
         httpd_resp_send(req, (const char *)index_html,
                         HTTPD_RESP_USE_STRLEN);
+        ESP_LOGI(__func__, "index.html sent");
     }
     else if (strlen(req->uri) > 1) {
-        if (strcmp(req->uri + sizeof(char), get_btn) == 0) {
-            ESP_LOGI(__func__, "Handling test btn");
-            paf_led_set_start_test();
+        if (strcmp(req->uri + sizeof(char), get_btn_test_start) == 0) {
+            ESP_LOGI(__func__, "Handling test start");
+            paf_test_run_next_test();
             httpd_resp_send(req, NULL, 0);
         }
-        else if (strcmp(req->uri + sizeof(char), get_led) == 0) {
-            ESP_LOGI(__func__, "Handling led");
-            if (paf_led_get_led())
-                httpd_resp_send(req, "ON",
+        else if (strcmp(req->uri + sizeof(char), get_btn_test_stop) ==
+                 0) {
+            paf_test_stop_cur_test();
+            ESP_LOGI(__func__, "Handling test stop");
+        }
+        else if (strcmp(req->uri + sizeof(char), get_btn_next) == 0) {
+            paf_test_next_test();
+            ESP_LOGI(__func__, "Handling btn next");
+        }
+        else if (strcmp(req->uri + sizeof(char), get_btn_prev) == 0) {
+            paf_test_prev_test();
+            ESP_LOGI(__func__, "Handling btn prev");
+        }
+        else if (strcmp(req->uri + sizeof(char),
+                        get_time_remaining) == 0) {
+            sprintf((char *)req->uri, "%d",
+                    paf_test_get_time_remaining());
+            ESP_LOGI(__func__, "Handling get time remaining: %s",
+                     req->uri);
+            httpd_resp_send(req, (const char *)req->uri,
+                            HTTPD_RESP_USE_STRLEN);
+        }
+        else if (strcmp(req->uri + sizeof(char), get_test_status) ==
+                 0) {
+            ESP_LOGI(__func__, "Handling test status");
+            if (paf_test_get_time_remaining())
+                httpd_resp_send(req, "RUNNING",
                                 HTTPD_RESP_USE_STRLEN);
             else
-                httpd_resp_send(req, "OFF",
+                httpd_resp_send(req, "STOPPED",
                                 HTTPD_RESP_USE_STRLEN);
         }
         else if (strcmp(req->uri + sizeof(char), get_freq) == 0) {
@@ -97,17 +133,67 @@ static esp_err_t http_server_get_handler(httpd_req_t *req)
         }
         else if (strcmp(req->uri + sizeof(char), get_dutycycle) ==
                  0) {
-            sprintf((char *)req->uri, "%d", dutyCycleCounterToPercent(paf_led_get_dc()));
+            sprintf((char *)req->uri, "%d",
+                    dutyCycleCounterToPercent(paf_led_get_dc()));
             ESP_LOGI(__func__, "Handling dc: %s", req->uri);
             httpd_resp_send(req, (const char *)req->uri,
                             HTTPD_RESP_USE_STRLEN);
         }
-        else if (strcmp(req->uri + sizeof(char), get_onDuration) == 0) {
+        else if (strcmp(req->uri + sizeof(char), get_onDuration) ==
+                 0) {
             sprintf((char *)req->uri, "%d", paf_led_get_time());
-            ESP_LOGI(__func__, "Handling on duration: %s", req->uri);
-            httpd_resp_send(req, (const char *)req->uri, HTTPD_RESP_USE_STRLEN);
+            ESP_LOGI(__func__, "Handling on duration: %s",
+                     req->uri);
+            httpd_resp_send(req, (const char *)req->uri,
+                            HTTPD_RESP_USE_STRLEN);
+        }
+        else if (strcmp(req->uri + sizeof(char),
+                        get_test_count_total) == 0) {
+            sprintf((char *)req->uri, "%d",
+                    paf_test_get_test_count_total());
+            ESP_LOGI(__func__, "Handling get total test count: %s",
+                     req->uri);
+            httpd_resp_send(req, (const char *)req->uri,
+                            HTTPD_RESP_USE_STRLEN);
+        }
+        else if (strcmp(req->uri + sizeof(char), get_test_number) ==
+                 0) {
+            sprintf((char *)req->uri, "%d",
+                    paf_test_get_cur_test());
+            ESP_LOGI(__func__, "Handling get test num: %s",
+                     req->uri);
+            httpd_resp_send(req, (const char *)req->uri,
+                            HTTPD_RESP_USE_STRLEN);
+        }
+        else if (strcmp(req->uri + sizeof(char), get_test_freq) ==
+                 0) {
+            sprintf((char *)req->uri, "%d",
+                    paf_test_get_cur_freq());
+            ESP_LOGI(__func__, "Handling get test freq: %s",
+                     req->uri);
+            httpd_resp_send(req, (const char *)req->uri,
+                            HTTPD_RESP_USE_STRLEN);
+        }
+        else if (strcmp(req->uri + sizeof(char), get_test_dc) ==
+                 0) {
+            sprintf((char *)req->uri, "%d",
+                    paf_test_get_cur_dc());
+            ESP_LOGI(__func__, "Handling get test dc: %s",
+                     req->uri);
+            httpd_resp_send(req, (const char *)req->uri,
+                            HTTPD_RESP_USE_STRLEN);
+        }
+        else if (strcmp(req->uri + sizeof(char), get_test_dur) ==
+                 0) {
+            sprintf((char *)req->uri, "%d",
+                    paf_test_get_cur_dur());
+            ESP_LOGI(__func__, "Handling get test dur: %s",
+                     req->uri);
+            httpd_resp_send(req, (const char *)req->uri,
+                            HTTPD_RESP_USE_STRLEN);
         }
         else {
+            ESP_LOGI(__func__, "Unhandled GET");
             httpd_resp_send(req, NULL, 0);
         }
     }
@@ -137,7 +223,9 @@ static esp_err_t http_server_post(httpd_req_t *req)
                             content_buf, NULL, 10);
                     ESP_LOGI(__func__,
                              "Handling set dc: %u", new_dc);
-                    paf_led_set_dc(dutyCyclePercentToCounter(new_dc));
+                    paf_led_set_dc(
+                        dutyCyclePercentToCounter(
+                            new_dc));
                     httpd_resp_send(req, "DC Set",
                                     HTTPD_RESP_USE_STRLEN);
                 }
@@ -154,17 +242,46 @@ static esp_err_t http_server_post(httpd_req_t *req)
                                     HTTPD_RESP_USE_STRLEN);
                 }
                 else if (strcmp(req->uri + sizeof(char),
-                                get_set_onDuration) == 0) {
-                    unsigned int new_onTime = (unsigned int) strtoul(content_buf, NULL, 10);
-                    ESP_LOGI(__func__, "Handling set on-duration: %u", new_onTime);
-                    paf_led_set_time(new_onTime);
-                    httpd_resp_send(req, "Duration Set", HTTPD_RESP_USE_STRLEN);
+                                post_auto_check) == 0) {
+                    unsigned int auto_check =
+                        (unsigned int)strtoul(
+                            content_buf, NULL, 10);
+                    ESP_LOGI(__func__,
+                             "Handling post auto-check: %u",
+                             auto_check);
+                    if (auto_check) {
+                        paf_test_set_auto_skip();
+                    }
+                    else {
+                        paf_test_unset_auto_skip();
+                    }
                 }
-                else if (strcmp(req->uri + sizeof(char), get_set_GPIO) == 0) {
-                    unsigned int GPIO_Pin = (unsigned int) strtoul(content_buf, NULL, 10);
-                    ESP_LOGI(__func__, "GPIO Pin %u toggled", GPIO_Pin);
+                else if (strcmp(req->uri + sizeof(char),
+                                get_set_onDuration) == 0) {
+                    unsigned int new_onTime =
+                        (unsigned int)strtoul(
+                            content_buf, NULL, 10);
+                    ESP_LOGI(__func__,
+                             "Handling set on-duration: %u",
+                             new_onTime);
+                    paf_led_set_time(new_onTime);
+                    httpd_resp_send(req, "Duration Set",
+                                    HTTPD_RESP_USE_STRLEN);
+                }
+                else if (strcmp(req->uri + sizeof(char),
+                                get_set_GPIO) == 0) {
+                    unsigned int GPIO_Pin =
+                        (unsigned int)strtoul(
+                            content_buf, NULL, 10);
+                    ESP_LOGI(__func__,
+                             "GPIO Pin %u toggled",
+                             GPIO_Pin);
                     paf_gpio_toggle_state(GPIO_Pin);
-                    httpd_resp_send(req, "GPIO Toggled", HTTPD_RESP_USE_STRLEN);
+                    httpd_resp_send(req, "GPIO Toggled",
+                                    HTTPD_RESP_USE_STRLEN);
+                }
+                else {
+                    ESP_LOGI(__func__, "Unhandled POST");
                 }
             }
         }

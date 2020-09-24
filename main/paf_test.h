@@ -1,9 +1,8 @@
-
 /**
- * @file paf.c
+ * @file paf_test.H
  * @author Alex Hoffman
- * @date 25 August 2020
- * @brief Main application
+ * @date 23 September 2020
+ * @brief Testing utils
  *
  * @verbatim
    ----------------------------------------------------------------------
@@ -22,31 +21,24 @@
 @endverbatim
  */
 
-#include <string.h>
+#ifndef __PAF_TEST_H__
+#define __PAF_TEST_H__
 
-#include "freertos/FreeRTOS.h"
-#include "freertos/task.h"
+#include "esp_err.h"
 
-#include "paf_console.h"
-#include "paf_flash.h"
-#include "paf_wifi.h"
-#include "paf_webserver.h"
-#include "paf_led.h"
-#include "paf_config.h"
-#include "screen.h"
-#include "paf_gpio.h"
+unsigned int paf_test_get_test_count_total(void);
+unsigned int paf_test_get_cur_test(void);
+unsigned int paf_test_get_time_remaining(void);
+void paf_test_next_test(void);
+void paf_test_prev_test(void);
+void paf_test_pause_cur_test(void);
+void paf_test_resume_cur_test(void);
+void paf_test_stop_cur_test(void);
+esp_err_t paf_test_run_next_test(void);
+void paf_test_set_auto_skip(void);
+void paf_test_unset_auto_skip(void);
+unsigned int paf_test_get_cur_freq(void);
+unsigned int paf_test_get_cur_dc(void);
+unsigned int paf_test_get_cur_dur(void);
 
-unsigned int paf_verbose = 1;
-
-void app_main(void)
-{
-    vTaskDelay(pdMS_TO_TICKS(100));
-    paf_wifi_init_ap();
-    paf_webserver_init();
-    /** paf_led_init(PAF_DEF_LED_MODE); */
-    /** screen_init(paf_verbose); */
-    /** uint64_t pin_enabled_register = (1 << PAF_LED_3) | (1 << PAF_LED_4); */
-    /** paf_gpio_init(pin_enabled_register); */
-    paf_console_init();
-
-}
+#endif // __PAF_TEST_H__

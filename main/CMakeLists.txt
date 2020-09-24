@@ -6,6 +6,7 @@ idf_component_register(SRCS
     "paf_led.c"
     "paf_util.c"
     "paf_webserver.c"
+    "paf_test.c"
     "paf_wifi.c"
     "esp32_ssd1306.c"
     "fonts.c"
