@@ -25,25 +25,27 @@
 #include "freertos/task.h"
 
 #include "esp_log.h"
-
+#include "paf_led.h"
 #include "paf_config.h"
 
-struct test_config {
+#define MIN_COUNTER_TICKS_IN_PERIOD  10
+
+typedef struct test_config{
     unsigned int freq;
     unsigned int dc;
     unsigned int duration;
-};
+}test_config_t;
 
 PAF_DEF_TESTS;
 
 struct tests {
     unsigned int num_tests;
     unsigned int cur_test;
-    struct test_config *tests;
+    test_config_t *tests;
 } paf_test = { .num_tests = PAF_TEST_COUNT, .tests = paf_def_tests };
 
 static unsigned char auto_skip = 1;
-static unsigned int cur_time_remaining = 0;
+static int64_t cur_time_remaining = 0;
 static TaskHandle_t cur_test_task = NULL;
 
 void paf_test_set_auto_skip(void)
@@ -83,14 +85,14 @@ void paf_test_stop_cur_test(void)
 static void wait_for_test(void *params)
 {
     while (1) {
-        vTaskDelay(pdMS_TO_TICKS(1000));
-        cur_time_remaining--;
-        if (!cur_time_remaining) {
+        vTaskDelay(pdMS_TO_TICKS(100));
+        cur_time_remaining-=100;
+        if (cur_time_remaining<=0) {
             if (auto_skip) {
                 paf_test.cur_test++;
                 paf_test.cur_test %= paf_test.num_tests;
             }
-            ESP_LOGI(__func__, "Test task ending");
+            cur_time_remaining = 0;
             paf_test_stop_cur_test();
         }
     }
@@ -138,14 +140,35 @@ unsigned int paf_test_get_cur_dur(void)
     return paf_test.tests[paf_test.cur_test].duration;
 }
 
-static esp_err_t paf_test_run_test(struct test_config *test)
+static esp_err_t paf_test_run_test(test_config_t *test)
 {
     cur_time_remaining = test->duration;
 
-    //TODO setup output according to test
+    
+    paf_led_set_dc(test->dc);
+    //set test duration in ms 
+    paf_led_set_time(test->duration);
+    paf_led_set_pulse_not_selected();
+    ESP_LOGI(__func__,"led on time set");
+    if(test->freq != 0)
+    {
+        if(test->freq > PULS_TIMER_TICKS_S/MIN_COUNTER_TICKS_IN_PERIOD)
+        {
+            test->freq = PULS_TIMER_TICKS_S/MIN_COUNTER_TICKS_IN_PERIOD;
+        }
+
+        uint32_t ticks = PULS_TIMER_TICKS_S/test->freq;
+        ESP_LOGI(__func__,"TICKS: %d", ticks);
+        ESP_ERROR_CHECK(paf_led_set_pulse_periode(ticks));
+        ESP_ERROR_CHECK(paf_led_set_pulse_on_duration(ticks/2)); 
+
+        paf_led_set_pulse_selected();
+    }    
+    ESP_LOGI(__func__,"Starting Test");
+    paf_led_start_test();
 
     ESP_LOGI(__func__, "Creating test task");
-    if (xTaskCreatePinnedToCore(wait_for_test, "test", 1024, NULL,
+    if (xTaskCreatePinnedToCore(wait_for_test, "test", 2048, NULL,
                                 PAF_TEST_TASK_PRIORITY, &cur_test_task,
                                 tskNO_AFFINITY) != pdPASS) {
         return ESP_FAIL;
@@ -157,7 +180,7 @@ static esp_err_t paf_test_run_test(struct test_config *test)
 
 esp_err_t paf_test_run_next_test(void)
 {
-    struct test_config *cur_test = &paf_test.tests[paf_test.cur_test];
+    test_config_t *cur_test = &paf_test.tests[paf_test.cur_test];
     ESP_LOGI(__func__, "Running test #%d {freq: %d, dc: %d, dur: %d}",
              paf_test.cur_test, cur_test->freq, cur_test->dc,
              cur_test->duration);
