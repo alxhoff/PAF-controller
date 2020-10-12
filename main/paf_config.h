@@ -3,9 +3,20 @@
 
 #define FREERTOS 1
 #define SCREEN_USE_CURSOR 1
-#define PAF_DEF_LED_GPIO (12)
+
+#define PAF_DEF_LED_1 (35)
+#define PAF_DEF_LED_2 (34)
+#define PAF_DEF_LED_3 
+#define PAF_DEF_LED_4
+#define PAF_DEF_LED_5 (32)
+#define PAF_DEF_LED_6 (33)
+#define PAF_DEF_LED_7 (26)
+#define PAF_DEF_LED_8 (27)
+
+
+#define PAF_DEF_LED_GPIO PAF_DEF_LED_8
 #define PAF_DEF_LED_DC (4000)
-#define PAF_DEF_LED_FREQ (5000)
+#define PAF_DEF_LED_FREQ (9500)
 #define PAF_DEF_LED_PWM_FADE_TIME (3000)
 
 #define PAF_DEF_WIFI_SSID "PAF"
@@ -41,21 +52,20 @@
 
 #define PAF_TEST_COUNT 15
 #define PAF_DEF_TESTS static struct test_config paf_def_tests[PAF_TEST_COUNT] = { \
-        PAF_TEST(1000, 2000, 5) \
-        PAF_TEST(2000, 2000, 5) \
-        PAF_TEST(3000, 2000, 5) \
-        PAF_TEST(4000, 2000, 5) \
-        PAF_TEST(5000, 2000, 5) \
-        PAF_TEST(6000, 2000, 5) \
-        PAF_TEST(1000, 2000, 5) \
-        PAF_TEST(1000, 2000, 5) \
-        PAF_TEST(1000, 2000, 5) \
-        PAF_TEST(1000, 2000, 5) \
-        PAF_TEST(1000, 2000, 5) \
-        PAF_TEST(1000, 2000, 5) \
-        PAF_TEST(1000, 2000, 5) \
-        PAF_TEST(1000, 2000, 5) \
-        PAF_TEST(1000, 2000, 5) \
+        PAF_TEST(100, 0.5*8191, 500) \
+        PAF_TEST(10, 8191, 1000) \
+        PAF_TEST(1, 8191, 5000) \
+        PAF_TEST(1, 8191, 10000) \
+        PAF_TEST(1, 8191, 30000) \
+        PAF_TEST(0, 8191, 60000) \
+        PAF_TEST(0, 0.1*8191, 60000) \
+        PAF_TEST(0, 0.25*8191, 60000) \
+        PAF_TEST(0, 0.5*8191, 60000) \
+        PAF_TEST(0, 0.75*8191, 60000) \
+        PAF_TEST(10, 8191, 20000) \
+        PAF_TEST(20, 8191, 20000) \
+        PAF_TEST(50, 8191, 20000) \
+        PAF_TEST(0, 0.01*8191, 5000) \
     }
 
 
