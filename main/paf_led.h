@@ -25,6 +25,8 @@
  */
 #include "esp_err.h"
 
+#define PULS_TIMER_TICKS_S 100000
+
 typedef enum paf_led_mode {
     PAF_LED_MODE_NOTSET = 0,
     PAF_LED_MODE_GPIO,
@@ -45,5 +47,10 @@ unsigned int paf_led_get_time(void);
 void paf_led_set_time(unsigned int duration);
 void paf_led_init_hw_timer(void);
 esp_err_t paf_led_init_pulse(void);
-esp_err_t paf_led_set_start_test(void);
+esp_err_t paf_led_start_test(void);
+
+int paf_led_set_pulse_on_duration(unsigned int pulse_on_duration);
+void paf_led_set_pulse_selected();
+void paf_led_set_pulse_not_selected();
+int paf_led_set_pulse_periode(unsigned int periode);
 #endif // __PAF_LED_H__
