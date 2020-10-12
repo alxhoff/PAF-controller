@@ -30,11 +30,11 @@
 
 #define MIN_COUNTER_TICKS_IN_PERIOD  10
 
-typedef struct test_config{
+typedef struct test_config {
     unsigned int freq;
     unsigned int dc;
     unsigned int duration;
-}test_config_t;
+} test_config_t;
 
 PAF_DEF_TESTS;
 
@@ -86,8 +86,8 @@ static void wait_for_test(void *params)
 {
     while (1) {
         vTaskDelay(pdMS_TO_TICKS(100));
-        cur_time_remaining-=100;
-        if (cur_time_remaining<=0) {
+        cur_time_remaining -= 100;
+        if (cur_time_remaining <= 0) {
             if (auto_skip) {
                 paf_test.cur_test++;
                 paf_test.cur_test %= paf_test.num_tests;
@@ -144,27 +144,25 @@ static esp_err_t paf_test_run_test(test_config_t *test)
 {
     cur_time_remaining = test->duration;
 
-    
+
     paf_led_set_dc(test->dc);
-    //set test duration in ms 
+    //set test duration in ms
     paf_led_set_time(test->duration);
     paf_led_set_pulse_not_selected();
-    ESP_LOGI(__func__,"led on time set");
-    if(test->freq != 0)
-    {
-        if(test->freq > PULS_TIMER_TICKS_S/MIN_COUNTER_TICKS_IN_PERIOD)
-        {
-            test->freq = PULS_TIMER_TICKS_S/MIN_COUNTER_TICKS_IN_PERIOD;
+    ESP_LOGI(__func__, "led on time set");
+    if (test->freq != 0) {
+        if (test->freq > PULS_TIMER_TICKS_S / MIN_COUNTER_TICKS_IN_PERIOD) {
+            test->freq = PULS_TIMER_TICKS_S / MIN_COUNTER_TICKS_IN_PERIOD;
         }
 
-        uint32_t ticks = PULS_TIMER_TICKS_S/test->freq;
-        ESP_LOGI(__func__,"TICKS: %d", ticks);
+        uint32_t ticks = PULS_TIMER_TICKS_S / test->freq;
+        ESP_LOGI(__func__, "TICKS: %d", ticks);
         ESP_ERROR_CHECK(paf_led_set_pulse_periode(ticks));
-        ESP_ERROR_CHECK(paf_led_set_pulse_on_duration(ticks/2)); 
+        ESP_ERROR_CHECK(paf_led_set_pulse_on_duration(ticks / 2));
 
         paf_led_set_pulse_selected();
-    }    
-    ESP_LOGI(__func__,"Starting Test");
+    }
+    ESP_LOGI(__func__, "Starting Test");
     paf_led_start_test();
 
     ESP_LOGI(__func__, "Creating test task");

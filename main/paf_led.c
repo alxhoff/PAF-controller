@@ -242,16 +242,16 @@ esp_err_t paf_led_start_test(void)
     if (!ledc_cfg.ledc_initd) {
         return -1;
     }
-    ESP_LOGI(__func__,"Set LED ON");
+    ESP_LOGI(__func__, "Set LED ON");
     paf_led_set_on();
 
     if (pulseGen_cfg.pulse_selected && pulseGen_cfg.pulse_inited) {
-        ESP_LOGI(__func__,"Activate Timer 0 GROUP 1 for Pulse");
+        ESP_LOGI(__func__, "Activate Timer 0 GROUP 1 for Pulse");
         ESP_ERROR_CHECK(timer_start(TIMER_GROUP_1, TIMER_0));
-        ESP_LOGI(__func__,"Activate Timer 1 GROUP 1 for Pulse");
+        ESP_LOGI(__func__, "Activate Timer 1 GROUP 1 for Pulse");
         ESP_ERROR_CHECK(timer_start(TIMER_GROUP_1, TIMER_1));
     }
-    ESP_LOGI(__func__,"Activate Timer for test duration");
+    ESP_LOGI(__func__, "Activate Timer for test duration");
     timer_start(TIMER_GROUP_0, TIMER_0);
 
 
@@ -343,11 +343,11 @@ static void timer0_tg0_isr(void *arg)
 {
     timer_spinlock_take(TIMER_GROUP_0);
     paf_led_set_off();
-    
+
     timer_pause(TIMER_GROUP_0, TIMER_0);
     timer_set_counter_value(TIMER_GROUP_0, TIMER_0, 0);
-    timer_group_clr_intr_status_in_isr(TIMER_GROUP_0,TIMER_0);
-    timer_group_intr_clr_in_isr(TIMER_GROUP_0,TIMER_0);
+    timer_group_clr_intr_status_in_isr(TIMER_GROUP_0, TIMER_0);
+    timer_group_intr_clr_in_isr(TIMER_GROUP_0, TIMER_0);
     TIMERG0.hw_timer[0].config.alarm_en = true;
 
     timer_pause(TIMER_GROUP_1, TIMER_0);
@@ -361,22 +361,22 @@ static void pulseGen_pulse_timer0_tg1_isr(void *arg)
 {
     timer_spinlock_take(TIMER_GROUP_1);
     paf_led_set_off();
-    timer_group_clr_intr_status_in_isr(TIMER_GROUP_1,TIMER_0);
-    timer_group_intr_clr_in_isr(TIMER_GROUP_1,TIMER_0);
+    timer_group_clr_intr_status_in_isr(TIMER_GROUP_1, TIMER_0);
+    timer_group_intr_clr_in_isr(TIMER_GROUP_1, TIMER_0);
     timer_pause(TIMER_GROUP_1, TIMER_0);
     timer_set_counter_value(TIMER_GROUP_1, TIMER_0, 0);
     timer_spinlock_give(TIMER_GROUP_1);
-    
-    
+
+
 }
 
 static void pulseGen_periode_timer1_tg1_isr(void *arg)
 {
     timer_spinlock_take(TIMER_GROUP_1);
     paf_led_set_on();
-    timer_pause(TIMER_GROUP_1,TIMER_1);
-    timer_group_intr_clr_in_isr(TIMER_GROUP_1,TIMER_1);
-    timer_group_clr_intr_status_in_isr(TIMER_GROUP_1,TIMER_1);
+    timer_pause(TIMER_GROUP_1, TIMER_1);
+    timer_group_intr_clr_in_isr(TIMER_GROUP_1, TIMER_1);
+    timer_group_clr_intr_status_in_isr(TIMER_GROUP_1, TIMER_1);
     timer_set_counter_value(TIMER_GROUP_1, TIMER_1, 0);
 
 
@@ -395,7 +395,7 @@ void paf_led_init_hw_timer()
 {
     timer_init(TIMER_GROUP_0, TIMER_0, &hw_timer0_config);
     timer_set_counter_value(TIMER_GROUP_0, TIMER_0, 0);
-    timer_set_alarm_value(TIMER_GROUP_0, TIMER_0, led_onDuration_ms*10);
+    timer_set_alarm_value(TIMER_GROUP_0, TIMER_0, led_onDuration_ms * 10);
     timer_isr_register(TIMER_GROUP_0, TIMER_0, &timer0_tg0_isr, NULL, 0, &s_timer_handle);
     timer_enable_intr(TIMER_GROUP_0, TIMER_0);
 }
@@ -437,12 +437,12 @@ esp_err_t paf_led_init_pulse()
 int paf_led_set_pulse_periode(unsigned int periode)
 {
     if (periode < pulseGen_cfg.pulse_on_duraton) {
-        ESP_LOGI(__func__,"Periode shorter (%d) than on duration (%d)",periode,pulseGen_cfg.pulse_on_duraton);
+        ESP_LOGI(__func__, "Periode shorter (%d) than on duration (%d)", periode, pulseGen_cfg.pulse_on_duraton);
         return -1;
     }
 
     pulseGen_cfg.periode = periode;
-    timer_set_alarm_value(TIMER_GROUP_1,TIMER_1, periode);
+    timer_set_alarm_value(TIMER_GROUP_1, TIMER_1, periode);
     return 0;
 }
 
@@ -453,7 +453,7 @@ int paf_led_set_pulse_on_duration(unsigned int pulse_on_duration)
     }
 
     pulseGen_cfg.pulse_on_duraton = pulse_on_duration;
-    timer_set_alarm_value(TIMER_GROUP_1,TIMER_0, pulse_on_duration);
+    timer_set_alarm_value(TIMER_GROUP_1, TIMER_0, pulse_on_duration);
     return 0;
 
 }

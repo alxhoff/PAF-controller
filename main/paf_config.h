@@ -6,7 +6,7 @@
 
 #define PAF_DEF_LED_1 (35)
 #define PAF_DEF_LED_2 (34)
-#define PAF_DEF_LED_3 
+#define PAF_DEF_LED_3
 #define PAF_DEF_LED_4
 #define PAF_DEF_LED_5 (32)
 #define PAF_DEF_LED_6 (33)
