@@ -30,6 +30,8 @@
 #include "esp_http_server.h"
 
 #include "../webpages/index.h"
+#include "../webpages/bootstrap.h"
+#include "../webpages/jquery.h"
 
 #include "paf_config.h"
 #include "paf_led.h"
@@ -42,6 +44,8 @@ const static char http_200_hdr[] = "200 OK";
 const static char http_content_type_html[] = "text/html";
 
 const static char get_root[] = "/";
+const static char get_bootstrap_css[] = "bootstrap.min.css";
+const static char get_jquery[] = "jquery.min.js";
 const static char get_btn_test_start[] = "btn-test-start";
 const static char get_btn_test_stop[] = "btn-test-stop";
 const static char get_btn_next[] = "btn-next";
@@ -92,6 +96,18 @@ static esp_err_t http_server_get_handler(httpd_req_t *req)
             ESP_LOGI(__func__, "Handling test start");
             paf_test_run_next_test();
             httpd_resp_send(req, NULL, 0);
+        }
+        else if (strcmp(req->uri + sizeof(char), get_bootstrap_css) ==
+                 0) {
+            httpd_resp_send(req, (const char *)bootstrap_min_css,
+                            HTTPD_RESP_USE_STRLEN);
+            ESP_LOGI(__func__, "bootstrap.min.css sent");
+        }
+        else if (strcmp(req->uri + sizeof(char), get_jquery) ==
+                 0) {
+            httpd_resp_send(req, (const char *)jquery_min_js,
+                            HTTPD_RESP_USE_STRLEN);
+            ESP_LOGI(__func__, "jquery.min.js sent");
         }
         else if (strcmp(req->uri + sizeof(char), get_btn_test_stop) ==
                  0) {
